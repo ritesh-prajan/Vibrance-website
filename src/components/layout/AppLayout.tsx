@@ -42,8 +42,8 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       />
 
       <div className="min-h-screen text-[#F3EDF2] flex flex-col font-sans selection:bg-[#FF3E41] selection:text-white relative z-10">
-        {/* Global Left Slide Telemetry Drawer */}
-        <LiveScheduleDrawer />
+        {/* Global Left Slide Telemetry Drawer — students only */}
+        {currentUser?.role === 'student' && <LiveScheduleDrawer />}
 
         {/* Seat Hold Banner */}
         {activeSeat && seatLockTimeRemaining > 0 && currentUser?.role === 'student' && (
