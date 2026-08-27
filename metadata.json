@@ -1,0 +1,8 @@
+{
+  "name": "Remix Vibrance 2026 Ticket Booking \u0026 Concurrency Lab",
+  "description": "College fest ticket booking system featuring a live DBMS concurrency simulation lab with 2-Phase Locking (2PL), race condition detection, and live transactional telemetry.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
