@@ -14,6 +14,7 @@ import { GlitchText } from '../../components/common/GlitchText';
 import { CrowdSilhouettes } from '../../components/landing/CrowdSilhouettes';
 import { StageLightBeams } from '../../components/landing/StageLightBeams';
 import { ParticleHazeCanvas } from '../../components/landing/ParticleHazeCanvas';
+import AuroraBackground from '../../components/ui/aurora-background';
 
 export const LoginPage: React.FC = () => {
   const { loginAsStudent, loginAsGateStaff, loginAsAdmin } = useFest();
@@ -124,7 +125,14 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#2A1D26] text-[#F3EDF2] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
+    <>
+      <AuroraBackground
+        className="fixed inset-0 w-full h-full pointer-events-none"
+        starCount={70}
+        pulseDuration={10}
+        ariaLabel="Vibrance aurora atmosphere"
+      />
+    <div className="min-h-screen text-[#F3EDF2] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden font-sans z-10">
       <AmbientBlobs />
       <ParticleHazeCanvas />
       <StageLightBeams />
@@ -325,5 +333,6 @@ export const LoginPage: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };

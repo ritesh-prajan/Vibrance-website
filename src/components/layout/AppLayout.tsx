@@ -11,6 +11,7 @@ import { NavbarBrand } from './NavbarBrand';
 import { NavRoleLinks } from './NavRoleLinks';
 import { UserPersonaMenu } from './UserPersonaMenu';
 import { MobileNavMenu } from './MobileNavMenu';
+import AuroraBackground from '../ui/aurora-background';
 
 export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, logout, activeSeat, activeSeatEventId, selectedEvent, seatLockTimeRemaining, releaseActiveSeat } = useFest();
@@ -31,9 +32,18 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
   };
 
   return (
-    <div className="min-h-screen bg-[#2A1D26] text-[#F3EDF2] flex flex-col font-sans selection:bg-[#FF3E41] selection:text-white relative">
-      {/* Global Left Slide Telemetry Drawer */}
-      <LiveScheduleDrawer />
+    <>
+      {/* Fixed aurora atmospheric layer — sits behind everything */}
+      <AuroraBackground
+        className="fixed inset-0 w-full h-full pointer-events-none"
+        starCount={60}
+        pulseDuration={14}
+        ariaLabel="Vibrance aurora atmosphere"
+      />
+
+      <div className="min-h-screen text-[#F3EDF2] flex flex-col font-sans selection:bg-[#FF3E41] selection:text-white relative z-10">
+        {/* Global Left Slide Telemetry Drawer */}
+        <LiveScheduleDrawer />
 
       {/* Seat Hold Banner */}
       {activeSeat && seatLockTimeRemaining > 0 && currentUser?.role === 'student' && (
@@ -102,5 +112,6 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
         </div>
       </footer>
     </div>
+    </>
   );
 };

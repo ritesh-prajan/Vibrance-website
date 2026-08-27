@@ -7,11 +7,16 @@
   --color-fest-primary: #FF3E41;
   --color-fest-secondary: #DF367C;
   --color-fest-highlight: #FF7099;
-  
+
+  /* Aurora variables — Vibrance crimson/magenta palette */
+  --aurora-color1: rgba(255, 62, 65, 0.18);
+  --aurora-color2: rgba(223, 54, 124, 0.15);
+
   --font-sans: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-display: 'Bebas Neue', 'Space Grotesk', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
+
 
 @layer base {
   :root {
@@ -107,4 +112,10 @@
   background: #883955;
 }
 
-
+/* ── Aurora background keyframes ─────────────────────────────── */
+@keyframes vibrance-aurora-pulse {
+  0%   { opacity: 0.55; transform: scale(1)    rotate(0deg); }
+  33%  { opacity: 0.75; transform: scale(1.06) rotate(1.5deg); }
+  66%  { opacity: 0.60; transform: scale(0.96) rotate(-1deg); }
+  100% { opacity: 0.55; transform: scale(1)    rotate(0deg); }
+}
