@@ -119,7 +119,7 @@ export const MyBookingsPage: React.FC = () => {
               <div className="flex items-center gap-2 pb-2 border-b border-red-500/30">
                 <Radio className="w-4 h-4 text-red-400 animate-ping" />
                 <h2 className="text-sm font-black text-red-400 uppercase tracking-wider">
-                  🔴 LIVE RIGHT NOW ON STAGE ({groups.live.length})
+                  LIVE RIGHT NOW ON STAGE ({groups.live.length})
                 </h2>
               </div>
               <div className="space-y-6">
@@ -140,7 +140,7 @@ export const MyBookingsPage: React.FC = () => {
               <div className="flex items-center gap-2 pb-2 border-b border-[#10B981]/30">
                 <Ticket className="w-4 h-4 text-[#10B981]" />
                 <h2 className="text-sm font-black text-[#10B981] uppercase tracking-wider">
-                  🎟️ ACTIVE / UPCOMING PASSES (INTACT) ({groups.intact.length})
+                  ACTIVE / UPCOMING PASSES (INTACT) ({groups.intact.length})
                 </h2>
               </div>
               <div className="space-y-6">
@@ -161,7 +161,7 @@ export const MyBookingsPage: React.FC = () => {
               <div className="flex items-center gap-2 pb-2 border-b border-white/10">
                 <Scissors className="w-4 h-4 text-white/40" />
                 <h2 className="text-sm font-black text-white/50 uppercase tracking-wider">
-                  ✂️ USED &amp; CONCLUDED PASSES (TORN) ({groups.torn.length})
+                  USED &amp; CONCLUDED PASSES (TORN) ({groups.torn.length})
                 </h2>
               </div>
               <div className="space-y-6">

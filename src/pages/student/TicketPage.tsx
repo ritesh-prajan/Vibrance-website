@@ -134,7 +134,7 @@ export const TicketPage: React.FC = () => {
           <div className="flex items-center gap-2">
             {isExpired ? (
               <span className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-white/10 text-white/50 border border-white/15">
-                ⏱️ EXPIRED
+                EXPIRED
               </span>
             ) : (
               <StatusBadge status={booking.status} size="lg" />

@@ -21,6 +21,7 @@ import {
   Flame,
   ArrowRight,
   ShieldCheck,
+  X,
 } from 'lucide-react';
 
 export const ConcurrencySimulator: React.FC = () => {
@@ -575,9 +576,10 @@ export const ConcurrencySimulator: React.FC = () => {
                   </div>
                   <button
                     onClick={() => setSelectedTxDetail(null)}
-                    className="text-xs text-white/40 hover:text-white"
+                    className="text-xs text-white/40 hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
                   >
-                    ✕ Close
+                    <X className="w-3.5 h-3.5" />
+                    <span>Close</span>
                   </button>
                 </div>
 

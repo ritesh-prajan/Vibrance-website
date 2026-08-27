@@ -95,7 +95,7 @@ export const EventsCatalogPage: React.FC = () => {
       ) : (
         <div className="space-y-8 font-mono">
           <EventTimelineSwimlane
-            title="🔴 LIVE ON STAGE RIGHT NOW"
+            title="LIVE ON STAGE RIGHT NOW"
             count={groups.live.length}
             icon={<Radio className="w-4 h-4 text-red-400 animate-ping" />}
             events={groups.live}
@@ -104,7 +104,7 @@ export const EventsCatalogPage: React.FC = () => {
           />
 
           <EventTimelineSwimlane
-            title="⚡ COMING UP NEXT (IN < 2 HOURS)"
+            title="COMING UP NEXT (IN < 2 HOURS)"
             count={groups.startingSoon.length}
             icon={<Zap className="w-4 h-4 fill-[#FF7099] text-[#FF7099]" />}
             events={groups.startingSoon}
@@ -113,7 +113,7 @@ export const EventsCatalogPage: React.FC = () => {
           />
 
           <EventTimelineSwimlane
-            title="📅 UPCOMING FESTIVAL SCHEDULE"
+            title="UPCOMING FESTIVAL SCHEDULE"
             count={groups.upcoming.length}
             icon={<Calendar className="w-4 h-4 text-white/50" />}
             events={groups.upcoming}
@@ -122,7 +122,7 @@ export const EventsCatalogPage: React.FC = () => {
           />
 
           <EventTimelineSwimlane
-            title="⏱️ CONCLUDED / PAST SHOWS"
+            title="CONCLUDED / PAST SHOWS"
             count={groups.expired.length}
             icon={<Clock className="w-4 h-4 text-white/30" />}
             events={groups.expired}

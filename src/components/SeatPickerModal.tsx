@@ -226,8 +226,8 @@ export const SeatPickerModal: React.FC<SeatPickerModalProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-[#ccff00] text-black flex items-center justify-center font-bold text-[10px]">
-                ✓
+              <div className="w-4 h-4 rounded bg-[#ccff00] text-black flex items-center justify-center">
+                <Check className="w-3 h-3 stroke-[3]" />
               </div>
               <div>
                 <p className="text-xs font-semibold text-white">Selected (You)</p>

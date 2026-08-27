@@ -45,17 +45,17 @@ export const DiscoBookingControlBar: React.FC<DiscoBookingControlBarProps> = ({
 
   const statusOptions: Array<{ value: BookingStatusFilter; label: string; icon: React.ReactNode; desc: string }> = [
     { value: 'ALL', label: 'All Passes', icon: <Sparkles className="w-3.5 h-3.5" />, desc: 'All active and spent passes' },
-    { value: 'ACTIVE_INTACT', label: '🎟️ Active Passes (Intact)', icon: <Ticket className="w-3.5 h-3.5 text-[#10B981]" />, desc: 'Upcoming confirmed passes ready for entry' },
-    { value: 'LIVE', label: '🔴 Live Stages', icon: <Radio className="w-3.5 h-3.5 text-red-400" />, desc: 'Shows in progress right now' },
-    { value: 'CHECKED_IN', label: '✂️ Used at Gate (Torn)', icon: <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />, desc: 'Passes with verified admission stub' },
-    { value: 'EXPIRED', label: '⏱️ Expired / Past (Torn)', icon: <Clock className="w-3.5 h-3.5 text-white/40" />, desc: 'Concluded festival events' },
+    { value: 'ACTIVE_INTACT', label: 'Active Passes (Intact)', icon: <Ticket className="w-3.5 h-3.5 text-[#10B981]" />, desc: 'Upcoming confirmed passes ready for entry' },
+    { value: 'LIVE', label: 'Live Stages', icon: <Radio className="w-3.5 h-3.5 text-red-400" />, desc: 'Shows in progress right now' },
+    { value: 'CHECKED_IN', label: 'Used at Gate (Torn)', icon: <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />, desc: 'Passes with verified admission stub' },
+    { value: 'EXPIRED', label: 'Expired / Past (Torn)', icon: <Clock className="w-3.5 h-3.5 text-white/40" />, desc: 'Concluded festival events' },
   ];
 
   const sortOptions = [
-    { value: 'SCHEDULE_EARLIEST', label: '🕒 Show Schedule (Earliest First)' },
-    { value: 'BOOKED_LATEST', label: '📅 Booking Date (Newest First)' },
-    { value: 'PRICE_DESC', label: '💎 Amount: High to Low' },
-    { value: 'PRICE_ASC', label: '💰 Amount: Low to High' },
+    { value: 'SCHEDULE_EARLIEST', label: 'Show Schedule (Earliest First)' },
+    { value: 'BOOKED_LATEST', label: 'Booking Date (Newest First)' },
+    { value: 'PRICE_DESC', label: 'Amount: High to Low' },
+    { value: 'PRICE_ASC', label: 'Amount: Low to High' },
   ];
 
   const activeStatusLabel = statusOptions.find((s) => s.value === statusFilter)?.label || 'Status';

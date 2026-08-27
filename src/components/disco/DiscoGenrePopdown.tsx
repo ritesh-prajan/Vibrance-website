@@ -16,12 +16,12 @@ export const DiscoGenrePopdown: React.FC<DiscoGenrePopdownProps> = ({ value, onC
 
   const categories = [
     { value: 'ALL', label: 'All Genres & Stages', badge: 'ALL' },
-    { value: 'PRO_SHOW', label: '🎤 Pro-Shows Live Concerts', badge: 'CONCERTS' },
-    { value: 'EDM', label: '🎧 EDM & Visual Pyrotechnics', badge: 'ELECTRONIC' },
-    { value: 'DANCE', label: '💃 Choreonite & Urban Clash', badge: 'DANCE' },
-    { value: 'COMEDY', label: '🎭 Stand-up Comedy Specials', badge: 'COMEDY' },
-    { value: 'BATTLE_OF_BANDS', label: '🎸 Rock Band Decibel Wars', badge: 'ROCK' },
-    { value: 'HACKATHON', label: '💻 36-Hour Hackathon Build', badge: 'TECH' },
+    { value: 'PRO_SHOW', label: 'Pro-Shows Live Concerts', badge: 'CONCERTS' },
+    { value: 'EDM', label: 'EDM & Visual Pyrotechnics', badge: 'ELECTRONIC' },
+    { value: 'DANCE', label: 'Choreonite & Urban Clash', badge: 'DANCE' },
+    { value: 'COMEDY', label: 'Stand-up Comedy Specials', badge: 'COMEDY' },
+    { value: 'BATTLE_OF_BANDS', label: 'Rock Band Decibel Wars', badge: 'ROCK' },
+    { value: 'HACKATHON', label: '36-Hour Hackathon Build', badge: 'TECH' },
   ];
 
   const activeCategory = categories.find((c) => c.value === value);

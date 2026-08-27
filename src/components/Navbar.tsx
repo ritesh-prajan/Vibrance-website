@@ -122,7 +122,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>⚡ System Lab</span>
+                <span>System Lab</span>
                 <span className="text-[9px] uppercase tracking-wider bg-black/40 px-1 rounded">Admin</span>
               </button>
 
@@ -323,7 +323,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                 currentTab === 'concurrency-lab' ? 'bg-[#00e5ff] text-black font-bold' : 'text-[#00e5ff]'
               }`}
             >
-              ⚡ System Lab
+              System Lab
             </button>
             <button
               onClick={() => setCurrentTab('audit-hub')}

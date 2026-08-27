@@ -173,7 +173,7 @@ export const VerifyConsolePage: React.FC = () => {
                     </div>
                   </div>
                   <span className="px-3 py-1 rounded-md text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                    ⏱️ EXPIRED
+                    EXPIRED
                   </span>
                 </div>
                 <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-xs font-mono text-amber-200">

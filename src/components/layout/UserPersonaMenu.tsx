@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut } from 'lucide-react';
+import { LogOut, GraduationCap, ShieldCheck, Cpu } from 'lucide-react';
 import { useFest } from '../../context/FestContext';
 import { useOutsideClick } from '../../hooks/useOutsideClick';
 
@@ -62,21 +62,24 @@ export const UserPersonaMenu: React.FC<UserPersonaMenuProps> = ({ onLogout }) =>
               <div className="text-[9px] text-white/40 uppercase font-bold px-1">Switch Active Persona</div>
               <button
                 onClick={() => { loginAsStudent(); setIsOpen(false); }}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition-colors cursor-pointer text-xs"
+                className="w-full text-left px-2.5 py-1.5 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition-colors cursor-pointer text-xs flex items-center gap-2"
               >
-                🎓 Student Persona
+                <GraduationCap className="w-3.5 h-3.5 text-[#FF7099]" />
+                <span>Student Persona</span>
               </button>
               <button
                 onClick={() => { loginAsGateStaff(); setIsOpen(false); }}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition-colors cursor-pointer text-xs"
+                className="w-full text-left px-2.5 py-1.5 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition-colors cursor-pointer text-xs flex items-center gap-2"
               >
-                🛡️ Gate Staff Persona
+                <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
+                <span>Gate Staff Persona</span>
               </button>
               <button
                 onClick={() => { loginAsAdmin(); setIsOpen(false); }}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition-colors cursor-pointer text-xs"
+                className="w-full text-left px-2.5 py-1.5 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition-colors cursor-pointer text-xs flex items-center gap-2"
               >
-                ⚡ Admin / Faculty Lab
+                <Cpu className="w-3.5 h-3.5 text-[#FF3E41]" />
+                <span>Admin / Faculty Lab</span>
               </button>
             </div>
 

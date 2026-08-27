@@ -75,13 +75,13 @@ export function getEventTiming(event: FestEvent | Booking | { id?: string; event
     statusLabel = 'EVENT CONCLUDED / EXPIRED';
     badgeClass = 'bg-white/10 text-white/50 border-white/15';
   } else if (status === 'LIVE_NOW') {
-    statusLabel = '🔴 LIVE NOW ON STAGE';
+    statusLabel = 'LIVE NOW ON STAGE';
     badgeClass = 'bg-red-500/25 text-red-400 border-red-500/50 animate-pulse';
   } else if (status === 'STARTING_SOON') {
-    statusLabel = '⚡ COMING UP NEXT';
+    statusLabel = 'COMING UP NEXT';
     badgeClass = 'bg-[#FF3E41]/25 text-[#FF7099] border-[#FF3E41]/50';
   } else {
-    statusLabel = '📅 UPCOMING SCHEDULE';
+    statusLabel = 'UPCOMING SCHEDULE';
     badgeClass = 'bg-[#883955]/30 text-white/80 border-[#883955]/50';
   }
 

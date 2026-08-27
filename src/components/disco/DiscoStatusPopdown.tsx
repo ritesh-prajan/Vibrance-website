@@ -17,9 +17,9 @@ export const DiscoStatusPopdown: React.FC<DiscoStatusPopdownProps> = ({ value, o
 
   const options: Array<{ value: TimeFilterStatus; label: string; icon: React.ReactNode; desc: string }> = [
     { value: 'ALL', label: 'All Shows', icon: <Sparkles className="w-3.5 h-3.5" />, desc: 'Show all timeline events' },
-    { value: 'LIVE_SOON', label: '🔴 Live & Coming Up (< 2h)', icon: <Radio className="w-3.5 h-3.5 text-red-400" />, desc: 'On stage now or starting shortly' },
-    { value: 'UPCOMING', label: '⚡ Upcoming Festival Lineup', icon: <Calendar className="w-3.5 h-3.5 text-[#10B981]" />, desc: 'Upcoming scheduled stages' },
-    { value: 'EXPIRED', label: '⏱️ Past Concluded Shows', icon: <Clock className="w-3.5 h-3.5 text-white/40" />, desc: 'Concluded festival events' },
+    { value: 'LIVE_SOON', label: 'Live & Coming Up (< 2h)', icon: <Radio className="w-3.5 h-3.5 text-red-400" />, desc: 'On stage now or starting shortly' },
+    { value: 'UPCOMING', label: 'Upcoming Festival Lineup', icon: <Calendar className="w-3.5 h-3.5 text-[#10B981]" />, desc: 'Upcoming scheduled stages' },
+    { value: 'EXPIRED', label: 'Past Concluded Shows', icon: <Clock className="w-3.5 h-3.5 text-white/40" />, desc: 'Concluded festival events' },
   ];
 
   const activeLabel = options.find((o) => o.value === value)?.label || 'Live Status';

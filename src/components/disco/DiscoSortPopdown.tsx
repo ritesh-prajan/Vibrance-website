@@ -14,11 +14,11 @@ export const DiscoSortPopdown: React.FC<DiscoSortPopdownProps> = ({ value, onCha
   useOutsideClick(containerRef, () => setIsOpen(false), isOpen);
 
   const sortOptions = [
-    { value: 'TIMING_CHRONOLOGICAL', label: '🕒 Real-Time (Live & Upcoming First)' },
-    { value: 'SEAT_CONTENTION', label: '⚡ Highest Contention (2PL Locks)' },
-    { value: 'PRICE_ASC', label: '💰 Price: Low to High' },
-    { value: 'PRICE_DESC', label: '💎 Price: High to Low' },
-    { value: 'NAME_ASC', label: '🔤 Stage Title (A-Z)' },
+    { value: 'TIMING_CHRONOLOGICAL', label: 'Real-Time (Live & Upcoming First)' },
+    { value: 'SEAT_CONTENTION', label: 'Highest Contention (2PL Locks)' },
+    { value: 'PRICE_ASC', label: 'Price: Low to High' },
+    { value: 'PRICE_DESC', label: 'Price: High to Low' },
+    { value: 'NAME_ASC', label: 'Stage Title (A-Z)' },
   ];
 
   return (
