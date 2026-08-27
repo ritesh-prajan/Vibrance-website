@@ -4,6 +4,7 @@ import { useFest } from '../../context/FestContext';
 import { Breadcrumbs } from '../../components/common/Breadcrumbs';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { EmptyState } from '../../components/common/EmptyState';
+import { TicketQrCanvas } from '../../components/common/TicketQrCanvas';
 import { getEventTiming } from '../../utils/timeUtils';
 import { motion } from 'framer-motion';
 import {
@@ -204,11 +205,15 @@ export const TicketPage: React.FC = () => {
               </div>
             )}
 
-            <div className="space-y-1">
-              <span className="text-[10px] font-mono text-white/40 uppercase">Digital Gate Pass QR</span>
-              <div className="p-4 bg-white rounded-2xl shadow-inner flex items-center justify-center my-2">
-                <QrCode className="w-32 h-32 text-black" />
-              </div>
+            <div className="space-y-2 flex flex-col items-center">
+              <span className="text-[10px] font-mono text-white/40 uppercase">Official Gate Pass QR</span>
+              <TicketQrCanvas
+                payload={booking.qrPayload || booking.bookingRef}
+                bookingRef={booking.bookingRef}
+                size={160}
+                color={isExpired ? '#6b7280' : '#10B981'}
+                showDownload={false}
+              />
               <div className="text-[11px] font-mono font-bold text-[#FF7099]">
                 {booking.bookingRef}
               </div>

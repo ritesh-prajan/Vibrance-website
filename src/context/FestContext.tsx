@@ -649,26 +649,44 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Real-time verification supporting VALID, ALREADY_USED, INVALID, and EXPIRED
   const verifyTicket = (query: string, staff: { name: string; staffId: string }): ScanRecord => {
-    const trimmed = query.trim().toUpperCase();
+    const raw = query.trim();
+    const trimmed = raw.toUpperCase();
     const now = Date.now();
 
-    const foundBooking = allBookings.find(
-      (b) =>
-        b.bookingRef.toUpperCase() === trimmed ||
-        b.id.toUpperCase() === trimmed ||
-        b.qrPayload.toUpperCase().includes(trimmed)
-    );
+    const foundBooking = allBookings.find((b) => {
+      const bRef = b.bookingRef.toUpperCase();
+      const bId = b.id.toUpperCase();
+      const bPayload = (b.qrPayload || '').toUpperCase();
+
+      return (
+        bRef === trimmed ||
+        bId === trimmed ||
+        bPayload === trimmed ||
+        trimmed.includes(bRef) ||
+        (bPayload && trimmed.includes(bPayload)) ||
+        (bPayload && bPayload.includes(trimmed))
+      );
+    });
 
     if (!foundBooking) {
       const record: ScanRecord = {
         id: `scan-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         timestamp: now,
-        query: trimmed,
+        query: raw,
         result: 'INVALID',
         staffMember: staff,
         message: 'Invalid pass or reference code. No record found in central database.',
       };
       setScanHistory((prev) => [record, ...prev]);
+      addAuditLog({
+        action: 'GATE_REJECT_INVALID',
+        eventId: 'SYSTEM',
+        eventTitle: 'Gate Verification',
+        userName: staff.name,
+        regNumber: staff.staffId,
+        status: 'EXPIRED',
+        details: `Invalid ticket payload rejected: "${raw}". Not found in records.`,
+      });
       return record;
     }
 
@@ -678,7 +696,7 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const record: ScanRecord = {
         id: `scan-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         timestamp: now,
-        query: trimmed,
+        query: raw,
         result: 'EXPIRED',
         staffMember: staff,
         bookingId: foundBooking.id,
@@ -706,7 +724,7 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const record: ScanRecord = {
         id: `scan-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         timestamp: now,
-        query: trimmed,
+        query: raw,
         result: 'ALREADY_USED',
         staffMember: staff,
         bookingId: foundBooking.id,
@@ -721,6 +739,16 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
         message: 'Duplicate Entry Alert: This pass has already been checked in.',
       };
       setScanHistory((prev) => [record, ...prev]);
+      addAuditLog({
+        action: 'GATE_REJECT_DUPLICATE',
+        eventId: foundBooking.eventId,
+        eventTitle: foundBooking.eventTitle,
+        seatLabel: foundBooking.seatLabel,
+        userName: foundBooking.studentName,
+        regNumber: foundBooking.regNumber,
+        status: 'EXPIRED',
+        details: `Duplicate entry intercepted for pass [${foundBooking.bookingRef}] (Attendee: ${foundBooking.studentName}).`,
+      });
       return record;
     }
 
@@ -741,7 +769,7 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const record: ScanRecord = {
       id: `scan-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       timestamp: now,
-      query: trimmed,
+      query: raw,
       result: 'VALID',
       staffMember: staff,
       bookingId: foundBooking.id,
@@ -753,6 +781,17 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     setScanHistory((prev) => [record, ...prev]);
+    addAuditLog({
+      action: 'GATE_ADMIT_VALID',
+      eventId: foundBooking.eventId,
+      eventTitle: foundBooking.eventTitle,
+      seatLabel: foundBooking.seatLabel,
+      userName: foundBooking.studentName,
+      regNumber: foundBooking.regNumber,
+      status: 'CONFIRMED',
+      details: `Gate admission granted for ${foundBooking.studentName} (${foundBooking.bookingRef}, Seat ${foundBooking.seatLabel}) at ${foundBooking.eventTitle}.`,
+    });
+
     return record;
   };
 
