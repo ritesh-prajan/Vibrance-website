@@ -5,8 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 import {
   Calendar, Ticket, User, ShieldCheck, History,
-  LayoutDashboard, Cpu, Activity, LogOut, Menu, X, ArrowRight,
+  LayoutDashboard, Cpu, Activity, LogOut, Menu, X, ArrowRight, Sparkles,
 } from 'lucide-react';
+import { LiveScheduleDrawer } from '../common/LiveScheduleDrawer';
+import { DiscoLightsBackground } from '../common/DiscoLightsBackground';
 
 export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const {
@@ -38,7 +40,10 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
   };
 
   return (
-    <div className="min-h-screen bg-[#2A1D26] text-[#F3EDF2] flex flex-col font-sans selection:bg-[#FF3E41] selection:text-white">
+    <div className="min-h-screen bg-[#2A1D26] text-[#F3EDF2] flex flex-col font-sans selection:bg-[#FF3E41] selection:text-white relative">
+      {/* ─── Global Left Vertical Sliding Drawer ─── */}
+      <LiveScheduleDrawer />
+
       {/* Seat Hold Banner */}
       {activeSeat && seatLockTimeRemaining > 0 && currentUser?.role === 'student' && (
         <div className="sticky top-0 z-50 bg-[#4C3549] border-b border-[#FF3E41] text-white px-4 py-2 text-xs font-mono flex items-center justify-between shadow-xl">
@@ -86,9 +91,10 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
         </div>
       )}
 
-      {/* Navbar */}
-      <header className="bg-[#4C3549] border-b border-white/15 sticky top-0 z-40 shadow-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Navbar with Disco Accent */}
+      <header className="bg-[#4C3549]/95 backdrop-blur-xl border-b border-white/15 sticky top-0 z-40 shadow-xl overflow-hidden">
+        <DiscoLightsBackground intensity="subtle" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
@@ -99,169 +105,265 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                   <span className="text-[10px] font-mono text-[#FF7099] tracking-widest uppercase block mt-0.5">FEST 2026</span>
                 </div>
               </NavLink>
-              {currentUser && (
-                <div className="hidden sm:inline-flex items-center ml-2">
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider ${
-                    currentUser.role === 'admin' ? 'bg-[#883955] text-white border border-[#FF7099]/40'
-                    : currentUser.role === 'gate_staff' ? 'bg-[#DF367C]/30 text-[#FF7099] border border-[#DF367C]/50'
-                    : 'bg-[#FF3E41]/20 text-[#FF3E41] border border-[#FF3E41]/40'
-                  }`}>{currentUser.role.replace('_', ' ')}</span>
-                </div>
-              )}
             </div>
 
-            {/* Desktop Nav */}
+            {/* Navigation Links */}
             <nav className="hidden md:flex items-center gap-1 font-mono text-xs">
               {currentUser?.role === 'student' && (
                 <>
-                  <NavLink to="/events" className={({ isActive }) => `px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 ${isActive ? 'bg-[#FF3E41] text-white font-bold shadow-md' : 'text-white/70 hover:text-white hover:bg-white/5'}`}><Calendar className="w-3.5 h-3.5" /><span>Events Catalog</span></NavLink>
-                  <NavLink to="/my-bookings" className={({ isActive }) => `px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 ${isActive ? 'bg-[#FF3E41] text-white font-bold shadow-md' : 'text-white/70 hover:text-white hover:bg-white/5'}`}><Ticket className="w-3.5 h-3.5" /><span>My Bookings</span></NavLink>
-                  <NavLink to="/profile" className={({ isActive }) => `px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 ${isActive ? 'bg-[#FF3E41] text-white font-bold shadow-md' : 'text-white/70 hover:text-white hover:bg-white/5'}`}><User className="w-3.5 h-3.5" /><span>My Profile</span></NavLink>
+                  <NavLink
+                    to="/events"
+                    className={({ isActive }) =>
+                      `px-3.5 py-2 rounded-xl transition-all font-semibold ${
+                        isActive ? 'bg-[#FF3E41] text-white shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'
+                      }`
+                    }
+                  >
+                    Events Lineup
+                  </NavLink>
+                  <NavLink
+                    to="/my-bookings"
+                    className={({ isActive }) =>
+                      `px-3.5 py-2 rounded-xl transition-all font-semibold ${
+                        isActive ? 'bg-[#FF3E41] text-white shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'
+                      }`
+                    }
+                  >
+                    My Bookings
+                  </NavLink>
+                  <NavLink
+                    to="/profile"
+                    className={({ isActive }) =>
+                      `px-3.5 py-2 rounded-xl transition-all font-semibold ${
+                        isActive ? 'bg-[#FF3E41] text-white shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'
+                      }`
+                    }
+                  >
+                    Profile
+                  </NavLink>
                 </>
               )}
-              {currentUser?.role === 'gate_staff' && (
+
+              {currentUser?.role === 'staff' && (
                 <>
-                  <NavLink to="/verify" className={({ isActive }) => `px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 ${isActive ? 'bg-[#DF367C] text-white font-bold shadow-md' : 'text-white/70 hover:text-white hover:bg-white/5'}`}><ShieldCheck className="w-3.5 h-3.5" /><span>Verify Scanner</span></NavLink>
-                  <NavLink to="/verify/history" className={({ isActive }) => `px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 ${isActive ? 'bg-[#DF367C] text-white font-bold shadow-md' : 'text-white/70 hover:text-white hover:bg-white/5'}`}><History className="w-3.5 h-3.5" /><span>Check-in Log</span></NavLink>
+                  <NavLink
+                    to="/verify"
+                    className={({ isActive }) =>
+                      `px-3.5 py-2 rounded-xl transition-all font-semibold ${
+                        isActive ? 'bg-[#DF367C] text-white shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'
+                      }`
+                    }
+                  >
+                    Gate Scanner
+                  </NavLink>
+                  <NavLink
+                    to="/verify/history"
+                    className={({ isActive }) =>
+                      `px-3.5 py-2 rounded-xl transition-all font-semibold ${
+                        isActive ? 'bg-[#DF367C] text-white shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'
+                      }`
+                    }
+                  >
+                    Scan Log
+                  </NavLink>
                 </>
               )}
+
               {currentUser?.role === 'admin' && (
                 <>
-                  <NavLink to="/admin" end className={({ isActive }) => `px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 ${isActive ? 'bg-[#883955] text-white font-bold shadow-md border border-white/20' : 'text-white/70 hover:text-white hover:bg-white/5'}`}><LayoutDashboard className="w-3.5 h-3.5" /><span>Dashboard</span></NavLink>
-                  <NavLink to="/admin/concurrency-lab" className={({ isActive }) => `px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 ${isActive ? 'bg-[#DF367C] text-white font-bold shadow-md' : 'text-white/70 hover:text-white hover:bg-white/5'}`}><Cpu className="w-3.5 h-3.5" /><span>Concurrency Lab</span></NavLink>
-                  <NavLink to="/admin/events" className={({ isActive }) => `px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 ${isActive ? 'bg-[#883955] text-white font-bold shadow-md border border-white/20' : 'text-white/70 hover:text-white hover:bg-white/5'}`}><Calendar className="w-3.5 h-3.5" /><span>Inventory</span></NavLink>
-                  <NavLink to="/admin/audit-logs" className={({ isActive }) => `px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 ${isActive ? 'bg-[#883955] text-white font-bold shadow-md border border-white/20' : 'text-white/70 hover:text-white hover:bg-white/5'}`}><Activity className="w-3.5 h-3.5" /><span>Audit Trail</span></NavLink>
+                  <NavLink
+                    to="/admin"
+                    end
+                    className={({ isActive }) =>
+                      `px-3.5 py-2 rounded-xl transition-all font-semibold ${
+                        isActive ? 'bg-[#883955] text-white shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'
+                      }`
+                    }
+                  >
+                    Dashboard
+                  </NavLink>
+                  <NavLink
+                    to="/admin/events"
+                    className={({ isActive }) =>
+                      `px-3.5 py-2 rounded-xl transition-all font-semibold ${
+                        isActive ? 'bg-[#883955] text-white shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'
+                      }`
+                    }
+                  >
+                    Events Admin
+                  </NavLink>
+                  <NavLink
+                    to="/admin/concurrency"
+                    className={({ isActive }) =>
+                      `px-3.5 py-2 rounded-xl transition-all font-semibold ${
+                        isActive ? 'bg-[#883955] text-white shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'
+                      }`
+                    }
+                  >
+                    2PL Concurrency Lab
+                  </NavLink>
+                  <NavLink
+                    to="/admin/audit"
+                    className={({ isActive }) =>
+                      `px-3.5 py-2 rounded-xl transition-all font-semibold ${
+                        isActive ? 'bg-[#883955] text-white shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'
+                      }`
+                    }
+                  >
+                    Audit Logs
+                  </NavLink>
                 </>
               )}
             </nav>
 
-            {/* User Profile */}
-            <div className="flex items-center gap-3">
+            {/* User Role Switcher & Profile */}
+            <div className="hidden md:flex items-center gap-3">
               {currentUser ? (
                 <div className="relative">
-                  <motion.button
-                    whileTap={{ scale: 0.97 }}
+                  <button
                     onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#2A1D26] hover:bg-[#883955] border border-white/10 transition-colors text-xs font-mono text-left cursor-pointer"
+                    className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-[#2A1D26] border border-white/15 hover:border-white/30 text-white text-xs font-mono transition-all cursor-pointer shadow-md"
                   >
-                    <div className="w-6 h-6 rounded-lg bg-[#FF3E41] text-white font-bold flex items-center justify-center text-[10px]">{currentUser.name.charAt(0)}</div>
-                    <div className="hidden sm:block">
-                      <div className="font-bold text-white leading-tight">{currentUser.name}</div>
-                      <div className="text-[10px] text-[#FF7099]">{currentUser.regNumber}</div>
+                    <div className="w-6 h-6 rounded-lg bg-[#FF3E41] text-white font-bold flex items-center justify-center text-[11px]">
+                      {currentUser.name.charAt(0)}
                     </div>
-                  </motion.button>
+                    <div className="text-left">
+                      <span className="font-bold block leading-none">{currentUser.name.split(' ')[0]}</span>
+                      <span className="text-[9px] text-[#FF7099] uppercase tracking-wider leading-none">
+                        {currentUser.role}
+                      </span>
+                    </div>
+                  </button>
+
                   <AnimatePresence>
                     {userDropdownOpen && (
                       <motion.div
-                        initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -8, scale: 0.97 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute right-0 mt-2 w-64 rounded-2xl bg-[#4C3549] border border-white/20 shadow-2xl p-3 z-50 space-y-2 font-mono text-xs"
+                        exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                        className="absolute right-0 mt-2 w-64 bg-[#2A1D26] border border-white/20 rounded-2xl p-3 shadow-2xl z-50 backdrop-blur-2xl space-y-2 font-mono text-xs"
                       >
-                        <div className="px-2 py-1.5 border-b border-white/10">
-                          <div className="font-bold text-white">{currentUser.name}</div>
-                          <div className="text-[11px] text-[#FF7099]">{currentUser.email}</div>
-                          <div className="text-[10px] text-white/50">{currentUser.department}</div>
+                        <div className="p-2 bg-white/5 rounded-xl border border-white/5">
+                          <div className="font-bold text-white text-sm">{currentUser.name}</div>
+                          <div className="text-[#FF7099] text-[10px]">{currentUser.email}</div>
+                          <div className="text-white/40 text-[9px] uppercase mt-1">Role: {currentUser.role}</div>
                         </div>
+
                         <div className="space-y-1">
-                          <span className="text-[10px] uppercase text-white/40 px-2">Quick Switch Role:</span>
-                          <button onClick={() => { loginAsStudent('Rahul Sharma', 'RA2111003010142', 'Computer Science & Engineering', '3rd Year'); setUserDropdownOpen(false); navigate('/events'); }} className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-white/10 text-white flex items-center justify-between cursor-pointer">
-                            <span>Student (Rahul)</span><span className="text-[10px] text-[#FF3E41]">Student</span>
+                          <div className="text-[9px] text-white/40 uppercase font-bold px-1">Switch Active Persona</div>
+                          <button
+                            onClick={() => { loginAsStudent(); setUserDropdownOpen(false); }}
+                            className="w-full text-left px-2.5 py-1.5 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition-colors cursor-pointer text-xs"
+                          >
+                            🎓 Student Persona
                           </button>
-                          <button onClick={() => { loginAsGateStaff('Officer Rajesh Menon', 'STF-GATE-04', 'Gate A'); setUserDropdownOpen(false); navigate('/verify'); }} className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-white/10 text-white flex items-center justify-between cursor-pointer">
-                            <span>Staff (Rajesh)</span><span className="text-[10px] text-[#DF367C]">Gate Staff</span>
+                          <button
+                            onClick={() => { loginAsGateStaff(); setUserDropdownOpen(false); }}
+                            className="w-full text-left px-2.5 py-1.5 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition-colors cursor-pointer text-xs"
+                          >
+                            🛡️ Gate Staff Persona
                           </button>
-                          <button onClick={() => { loginAsAdmin('Dr. Ramesh Sundaram', 'FAC-DBMS-702', 'Computer Science & Engineering'); setUserDropdownOpen(false); navigate('/admin'); }} className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-white/10 text-white flex items-center justify-between cursor-pointer">
-                            <span>Admin (Prof. Ramesh)</span><span className="text-[10px] text-[#FF7099]">Admin</span>
+                          <button
+                            onClick={() => { loginAsAdmin(); setUserDropdownOpen(false); }}
+                            className="w-full text-left px-2.5 py-1.5 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition-colors cursor-pointer text-xs"
+                          >
+                            ⚡ Admin / Faculty Lab
                           </button>
                         </div>
-                        <div className="pt-2 border-t border-white/10">
-                          <motion.button whileTap={{ scale: 0.97 }} onClick={handleLogout} className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-red-500/20 text-red-300 flex items-center gap-2 cursor-pointer font-bold">
-                            <LogOut className="w-3.5 h-3.5" /><span>Sign Out</span>
-                          </motion.button>
+
+                        <div className="pt-1 border-t border-white/10">
+                          <button
+                            onClick={handleLogout}
+                            className="w-full text-left px-2.5 py-1.5 rounded-lg text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer text-xs font-bold flex items-center gap-1.5"
+                          >
+                            <LogOut className="w-3.5 h-3.5" />
+                            <span>Sign Out</span>
+                          </button>
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
               ) : (
-                <NavLink to="/login" className="px-4 py-2 rounded-xl bg-[#FF3E41] hover:bg-[#e03235] text-white text-xs font-bold font-mono transition-all shadow-md">Sign In</NavLink>
+                <NavLink
+                  to="/login"
+                  className="px-4 py-2 rounded-xl bg-[#FF3E41] hover:bg-[#e03235] text-white text-xs font-mono font-bold transition-all shadow-md"
+                >
+                  Sign In
+                </NavLink>
               )}
-              <motion.button
-                whileTap={{ scale: 0.97 }}
+            </div>
+
+            {/* Mobile Menu Button */}
+            <div className="flex md:hidden items-center gap-2">
+              <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 rounded-xl bg-[#2A1D26] text-white hover:bg-white/10 cursor-pointer"
+                className="p-2 rounded-xl bg-[#2A1D26] text-white border border-white/15 cursor-pointer"
               >
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </motion.button>
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Mobile Drawer */}
+        {/* Mobile Dropdown */}
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden md:hidden bg-[#2A1D26] border-b border-white/15 px-4 py-4 space-y-2 font-mono text-xs"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden border-t border-white/10 bg-[#2A1D26] px-4 py-4 space-y-3 font-mono text-xs"
             >
               {currentUser?.role === 'student' && (
                 <>
-                  <NavLink to="/events" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-xl hover:bg-[#4C3549] text-white font-bold">Events Catalog</NavLink>
-                  <NavLink to="/my-bookings" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-xl hover:bg-[#4C3549] text-white font-bold">My Bookings</NavLink>
-                  <NavLink to="/profile" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-xl hover:bg-[#4C3549] text-white font-bold">Student Profile</NavLink>
+                  <NavLink to="/events" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-white">Events Lineup</NavLink>
+                  <NavLink to="/my-bookings" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-white">My Bookings</NavLink>
+                  <NavLink to="/profile" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-white">Profile</NavLink>
                 </>
               )}
-              {currentUser?.role === 'gate_staff' && (
+              {currentUser?.role === 'staff' && (
                 <>
-                  <NavLink to="/verify" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-xl hover:bg-[#4C3549] text-white font-bold">Verify Scanner</NavLink>
-                  <NavLink to="/verify/history" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-xl hover:bg-[#4C3549] text-white font-bold">Check-in Log</NavLink>
+                  <NavLink to="/verify" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-white">Gate Scanner</NavLink>
+                  <NavLink to="/verify/history" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-white">Scan Log</NavLink>
                 </>
               )}
               {currentUser?.role === 'admin' && (
                 <>
-                  <NavLink to="/admin" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-xl hover:bg-[#4C3549] text-white font-bold">Admin Dashboard</NavLink>
-                  <NavLink to="/admin/concurrency-lab" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-xl hover:bg-[#4C3549] text-white font-bold">Concurrency Lab Simulator</NavLink>
-                  <NavLink to="/admin/events" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-xl hover:bg-[#4C3549] text-white font-bold">Inventory Management</NavLink>
-                  <NavLink to="/admin/audit-logs" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-xl hover:bg-[#4C3549] text-white font-bold">System Audit Logs</NavLink>
+                  <NavLink to="/admin" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-white">Dashboard</NavLink>
+                  <NavLink to="/admin/events" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-white">Events Admin</NavLink>
+                  <NavLink to="/admin/concurrency" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-white">2PL Lab</NavLink>
+                  <NavLink to="/admin/audit" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-white">Audit Logs</NavLink>
                 </>
               )}
-              <div className="pt-2 border-t border-white/10">
-                <button onClick={() => { setMobileMenuOpen(false); handleLogout(); }} className="w-full text-left px-3 py-2 rounded-xl text-red-400 font-bold cursor-pointer">Sign Out</button>
+              <div className="pt-2 border-t border-white/10 flex justify-between items-center">
+                <span className="text-white/60">{currentUser?.name}</span>
+                <button onClick={handleLogout} className="text-red-400 font-bold">Sign Out</button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </header>
 
-      {/* PAGE CONTENT with AnimatePresence transition */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            variants={pageVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.22, ease: 'easeOut' }}
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
+      {/* Main Content */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <motion.div
+          key={location.pathname}
+          variants={pageVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+        >
+          {children}
+        </motion.div>
       </main>
 
       {/* Footer */}
-      <footer className="bg-[#4C3549] border-t border-white/15 py-6 text-center text-xs font-mono text-white/50">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#10B981]" />
-            <span>Vibrance 2026 DBMS Concurrency Engine Active</span>
-          </div>
-          <div>Strict 2-Phase Locking (2PL) &bull; Serializability Benchmark Edition</div>
+      <footer className="bg-[#4C3549]/60 border-t border-white/10 py-6 mt-12 text-center text-xs font-mono text-white/50">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div>&copy; 2026 Vibrance Annual Cultural Fest &bull; VIT Chennai</div>
+          <div className="text-[#FF7099]">DBMS ACID Strict 2PL Demonstration</div>
         </div>
       </footer>
     </div>
