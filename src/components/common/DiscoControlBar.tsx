@@ -36,8 +36,11 @@ export const DiscoControlBar: React.FC<DiscoControlBarProps> = ({
   onViewModeChange,
 }) => {
   return (
-    <div className="relative rounded-3xl bg-[#4C3549]/85 backdrop-blur-2xl border border-white/20 p-4 sm:p-5 shadow-[0_15px_45px_rgba(0,0,0,0.4)] overflow-hidden font-mono text-xs z-30">
-      <DiscoLightsBackground intensity="vibrant" />
+    <div className="relative rounded-3xl bg-[#4C3549]/85 backdrop-blur-2xl border border-white/20 p-4 sm:p-5 shadow-[0_15px_45px_rgba(0,0,0,0.4)] font-mono text-xs z-30">
+      {/* Contained Disco Light Beam Animations */}
+      <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+        <DiscoLightsBackground intensity="vibrant" />
+      </div>
 
       <div className="relative z-10 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 sm:gap-4">
         {/* Search */}

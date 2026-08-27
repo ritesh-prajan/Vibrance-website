@@ -61,28 +61,32 @@ export const DiscoBookingControlBar: React.FC<DiscoBookingControlBarProps> = ({
   const activeStatusLabel = statusOptions.find((s) => s.value === statusFilter)?.label || 'Status';
 
   return (
-    <div className="relative rounded-3xl bg-[#4C3549]/85 backdrop-blur-2xl border border-white/20 p-4 sm:p-5 shadow-[0_15px_45px_rgba(0,0,0,0.4)] overflow-hidden font-mono text-xs z-30">
-      <DiscoLightsBackground intensity="vibrant" />
+    <div className="relative rounded-3xl bg-[#4C3549]/85 backdrop-blur-2xl border border-white/20 p-4 sm:p-5 shadow-[0_15px_45px_rgba(0,0,0,0.4)] font-mono text-xs z-30">
+      {/* Contained Disco Light Beam Animations */}
+      <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+        <DiscoLightsBackground intensity="vibrant" />
+      </div>
 
       <div className="relative z-10 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 sm:gap-4">
         {/* Search */}
         <DiscoSearchInput
           value={searchQuery}
           onChange={onSearchChange}
-          placeholder="Search by Pass Ref, Event, Seat (e.g. VIB26, Armaan, A1)..."
+          placeholder="Search pass ref, event, seat (e.g. VIB26, Armaan)..."
         />
 
         {/* Control Popdown Pills */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
           {/* Status Popdown */}
-          <div ref={statusRef} className="relative">
+          <div ref={statusRef} className="relative z-50">
             <motion.button
+              type="button"
               whileTap={{ scale: 0.96 }}
               onClick={() => setStatusOpen(!statusOpen)}
               className={`px-3.5 py-2.5 rounded-2xl border flex items-center gap-2 transition-all cursor-pointer shadow-md ${
                 statusFilter !== 'ALL'
-                  ? 'bg-[#FF3E41] text-white border-[#FF3E41] font-bold shadow-[0_0_15px_rgba(255,62,65,0.3)]'
-                  : 'bg-[#2A1D26]/90 text-white/80 border-white/20 hover:border-white/40 hover:text-white'
+                  ? 'bg-[#FF3E41] text-white border-[#FF3E41] font-bold shadow-[0_0_15px_rgba(255,62,65,0.4)]'
+                  : 'bg-[#2A1D26]/95 text-white/90 border-white/20 hover:border-white/40 hover:text-white'
               }`}
             >
               <Ticket className="w-3.5 h-3.5 text-[#FF7099]" />
@@ -96,7 +100,7 @@ export const DiscoBookingControlBar: React.FC<DiscoBookingControlBarProps> = ({
                   initial={{ opacity: 0, y: 8, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 4, scale: 0.95 }}
-                  className="absolute left-0 sm:left-auto sm:right-0 mt-2 w-72 bg-[#2A1D26] border border-white/20 rounded-2xl p-2 shadow-2xl z-50 backdrop-blur-2xl space-y-1"
+                  className="absolute left-0 sm:left-auto sm:right-0 mt-2 w-72 bg-[#1f151c] border border-white/25 rounded-2xl p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-[100] backdrop-blur-3xl space-y-1"
                 >
                   <div className="px-3 py-1.5 text-[10px] text-white/40 font-bold uppercase tracking-wider border-b border-white/10">
                     Filter by Pass Status
@@ -104,14 +108,15 @@ export const DiscoBookingControlBar: React.FC<DiscoBookingControlBarProps> = ({
                   {statusOptions.map((opt) => (
                     <button
                       key={opt.value}
+                      type="button"
                       onClick={() => {
                         onStatusFilterChange(opt.value);
                         setStatusOpen(false);
                       }}
-                      className={`w-full text-left px-3 py-2 rounded-xl flex items-start justify-between gap-2 transition-colors cursor-pointer ${
+                      className={`w-full text-left px-3 py-2.5 rounded-xl flex items-start justify-between gap-2 transition-colors cursor-pointer ${
                         statusFilter === opt.value
-                          ? 'bg-[#FF3E41]/20 text-white border border-[#FF3E41]/40'
-                          : 'text-white/70 hover:bg-white/10 hover:text-white'
+                          ? 'bg-[#FF3E41] text-white font-bold'
+                          : 'text-white/80 hover:bg-white/10 hover:text-white'
                       }`}
                     >
                       <div className="space-y-0.5">
@@ -119,9 +124,9 @@ export const DiscoBookingControlBar: React.FC<DiscoBookingControlBarProps> = ({
                           {opt.icon}
                           <span>{opt.label}</span>
                         </div>
-                        <div className="text-[10px] text-white/50">{opt.desc}</div>
+                        <div className="text-[10px] opacity-75">{opt.desc}</div>
                       </div>
-                      {statusFilter === opt.value && <Check className="w-4 h-4 text-[#FF7099] shrink-0 mt-0.5" />}
+                      {statusFilter === opt.value && <Check className="w-4 h-4 text-white shrink-0 mt-0.5" />}
                     </button>
                   ))}
                 </motion.div>
@@ -133,11 +138,12 @@ export const DiscoBookingControlBar: React.FC<DiscoBookingControlBarProps> = ({
           <DiscoGenrePopdown value={selectedCategory} onChange={onCategoryChange} />
 
           {/* Sort Popdown */}
-          <div ref={sortRef} className="relative">
+          <div ref={sortRef} className="relative z-50">
             <motion.button
+              type="button"
               whileTap={{ scale: 0.96 }}
               onClick={() => setSortOpen(!sortOpen)}
-              className="px-3.5 py-2.5 rounded-2xl bg-[#2A1D26]/90 border border-white/20 hover:border-white/40 text-white/80 hover:text-white flex items-center gap-2 transition-all cursor-pointer shadow-md"
+              className="px-3.5 py-2.5 rounded-2xl bg-[#2A1D26]/95 border border-white/20 hover:border-white/40 text-white/90 hover:text-white flex items-center gap-2 transition-all cursor-pointer shadow-md"
             >
               <span className="font-bold">Sort</span>
               <ChevronDown className={`w-3.5 h-3.5 transition-transform ${sortOpen ? 'rotate-180' : ''}`} />
@@ -149,7 +155,7 @@ export const DiscoBookingControlBar: React.FC<DiscoBookingControlBarProps> = ({
                   initial={{ opacity: 0, y: 8, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 4, scale: 0.95 }}
-                  className="absolute right-0 mt-2 w-64 bg-[#2A1D26] border border-white/20 rounded-2xl p-2 shadow-2xl z-50 backdrop-blur-2xl space-y-1"
+                  className="absolute right-0 mt-2 w-64 bg-[#1f151c] border border-white/25 rounded-2xl p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-[100] backdrop-blur-3xl space-y-1"
                 >
                   <div className="px-3 py-1.5 text-[10px] text-white/40 font-bold uppercase tracking-wider border-b border-white/10">
                     Sort Passes By
@@ -157,18 +163,19 @@ export const DiscoBookingControlBar: React.FC<DiscoBookingControlBarProps> = ({
                   {sortOptions.map((opt) => (
                     <button
                       key={opt.value}
+                      type="button"
                       onClick={() => {
                         onSortChange(opt.value);
                         setSortOpen(false);
                       }}
                       className={`w-full text-left px-3 py-2 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
                         sortBy === opt.value
-                          ? 'bg-[#FF3E41]/20 text-white border border-[#FF3E41]/40 font-bold'
-                          : 'text-white/70 hover:bg-white/10 hover:text-white'
+                          ? 'bg-[#883955] text-white font-bold'
+                          : 'text-white/80 hover:bg-white/10 hover:text-white'
                       }`}
                     >
                       <span className="text-xs truncate">{opt.label}</span>
-                      {sortBy === opt.value && <Check className="w-3.5 h-3.5 text-[#FF7099] shrink-0" />}
+                      {sortBy === opt.value && <Check className="w-3.5 h-3.5 text-white shrink-0" />}
                     </button>
                   ))}
                 </motion.div>

@@ -59,93 +59,107 @@ export const LoginPage: React.FC = () => {
     const identifier =
       customIdentifier.trim() ||
       (selectedRole === 'student'
-        ? 'RA2111003010142'
+        ? '22BCE1999'
         : selectedRole === 'gate_staff'
-        ? 'STF-GATE-01'
-        : 'FAC-DBMS-001');
+        ? 'STAFF-001'
+        : 'ADMIN-SYS');
 
     if (selectedRole === 'student') {
-      loginAsStudent(name, identifier, customDept || 'Engineering', '3rd Year');
+      loginAsStudent(name, identifier, customDept || 'SCOPE');
       navigate('/events', { replace: true });
     } else if (selectedRole === 'gate_staff') {
-      loginAsGateStaff(name, identifier, 'Gate A');
+      loginAsGateStaff(name, identifier, customDept || 'Security');
       navigate('/verify', { replace: true });
-    } else if (selectedRole === 'admin') {
-      loginAsAdmin(name, identifier, customDept || 'Computer Science');
+    } else {
+      loginAsAdmin(name, identifier, customDept || 'Fest Operations');
       navigate('/admin', { replace: true });
     }
   };
 
-  const roles: { role: UserRole; label: string; icon: React.ReactNode; desc: string; color: string }[] = [
+  const roles: {
+    role: UserRole;
+    label: string;
+    icon: React.ReactNode;
+    desc: string;
+    color: string;
+  }[] = [
     {
       role: 'student',
-      label: 'STUDENT ATTENDEE',
-      icon: <User className="w-6 h-6" />,
-      desc: 'Access event catalog, reserve seats, manage bookings & digital passes',
+      label: 'Student',
+      icon: <User className="w-5 h-5" />,
+      desc: 'Browse events & book seats',
       color: '#FF3E41',
     },
     {
       role: 'gate_staff',
-      label: 'GATE SECURITY',
-      icon: <ShieldCheck className="w-6 h-6" />,
-      desc: 'Real-time ticket verification console & check-in audit trail',
+      label: 'Gate Staff',
+      icon: <ShieldCheck className="w-5 h-5" />,
+      desc: 'Scan QR passes at gates',
       color: '#DF367C',
     },
     {
       role: 'admin',
-      label: 'FACULTY / ADMIN',
-      icon: <Cpu className="w-6 h-6" />,
-      desc: 'DBMS Concurrency Lab, event inventory management & full audit access',
-      color: '#FF7099',
+      label: 'Admin',
+      icon: <Cpu className="w-5 h-5" />,
+      desc: 'DBMS concurrency lab & analytics',
+      color: '#883955',
     },
   ];
 
-  const profilesForRole =
+  const currentProfiles =
     selectedRole === 'student'
       ? MOCK_STUDENT_PROFILES
       : selectedRole === 'gate_staff'
       ? MOCK_STAFF_PROFILES
       : MOCK_ADMIN_PROFILES;
 
-  const containerVariants = { hidden: {}, visible: { transition: { staggerChildren: 0.08 } } };
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
+  };
+
   const itemVariants = {
-    hidden: { opacity: 0, y: 20, scale: 0.97 },
-    visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.28, ease: 'easeOut' } },
+    hidden: { opacity: 0, y: 16 },
+    visible: { opacity: 1, y: 0 },
   };
 
   return (
-    <div className="min-h-screen bg-[#2A1D26] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Full Stage Concert Backdrops */}
-      <AmbientBlobs variant="login" />
-      <StageLightBeams />
+    <div className="min-h-screen bg-[#2A1D26] text-[#F3EDF2] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
+      <AmbientBlobs />
       <ParticleHazeCanvas />
+      <StageLightBeams />
       <CrowdSilhouettes />
 
-      {/* Dimmed backdrop filter */}
-      <div className="pointer-events-none absolute inset-0 bg-[#2A1D26]/75 backdrop-blur-[6px] z-15" />
-
-      <div className="relative z-20 w-full max-w-5xl my-8">
-        {/* Header */}
-        <div className="text-center mb-8">
+      <div className="max-w-4xl w-full mx-auto space-y-8 relative z-10">
+        {/* Brand Header with Real Vibrance Logo */}
+        <div className="text-center space-y-3">
           <div className="flex items-center justify-center gap-3 mb-2">
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-xs font-mono transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/90 hover:text-white text-xs font-mono transition-colors border border-white/15"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Experience Full Landing Stage</span>
             </Link>
           </div>
 
+          <div className="flex justify-center">
+            <img
+              src="/vibrance-logo.png"
+              alt="VIT Chennai Vibrance Logo"
+              className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover shadow-[0_0_35px_rgba(255,62,65,0.4)] ring-4 ring-[#FF3E41]/50 bg-black animate-pulse"
+            />
+          </div>
+
           <GlitchText
             as="h1"
-            className="text-5xl sm:text-7xl font-display font-black text-white tracking-widest"
+            className="text-4xl sm:text-6xl font-display font-black text-white tracking-widest"
             delay={50}
           >
             VIBRANCE 2026
           </GlitchText>
-          <p className="text-white/60 text-xs sm:text-sm font-mono mt-2">
-            Annual College Fest &bull; Ticket Booking &amp; DBMS Concurrency Platform
+          <p className="text-white/60 text-xs sm:text-sm font-mono mt-1">
+            VIT Chennai Annual Cultural Fest &bull; Strict 2PL ACID Concurrency Engine
           </p>
         </div>
 
@@ -178,138 +192,136 @@ export const LoginPage: React.FC = () => {
                       layoutId="role-indicator"
                       className="absolute inset-0 rounded-2xl border-2"
                       style={{ borderColor: color }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                     />
                   )}
-                  <div className="mb-2" style={{ color: selectedRole === role ? color : '#ffffff99' }}>
+                  <div className="flex items-center gap-2 mb-1" style={{ color }}>
                     {icon}
+                    <span className="font-bold text-sm text-white font-mono">{label}</span>
                   </div>
-                  <div
-                    className="text-[10px] font-mono font-black uppercase tracking-wider"
-                    style={{ color: selectedRole === role ? color : 'rgba(255,255,255,0.7)' }}
-                  >
-                    {label}
-                  </div>
-                  <div className="text-[9px] text-white/50 mt-1 leading-tight">{desc}</div>
-                  {selectedRole === role && (
-                    <div className="absolute top-2 right-2">
-                      <CheckCircle2 className="w-3.5 h-3.5" style={{ color }} />
-                    </div>
-                  )}
+                  <p className="text-[11px] text-white/50 leading-tight">{desc}</p>
                 </motion.button>
               ))}
             </motion.div>
 
-            {/* Quick Profile Cards */}
-            <div className="bg-[#4C3549]/95 border border-white/15 rounded-3xl p-5 space-y-3 shadow-2xl backdrop-blur-md">
-              <div className="flex items-center gap-1.5 text-[11px] font-mono text-white/60">
-                <Sparkles className="w-3.5 h-3.5 text-[#FF7099]" />
-                <span>1-Click Fast Login Personas:</span>
+            {/* Persona Profiles */}
+            <div className="bg-[#4C3549]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono text-white/60 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#FF7099]" />
+                  SELECT PRESET TEST PERSONA
+                </span>
+                <span className="text-[10px] font-mono text-white/40 uppercase">1-Click Auto Login</span>
               </div>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={selectedRole}
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit={{ opacity: 0 }}
-                  className="space-y-2"
-                >
-                  {profilesForRole.map((profile) => (
+
+              <div className="space-y-2.5">
+                {currentProfiles.map((p) => {
+                  const isPending = pendingSelect === p.id;
+                  return (
                     <motion.button
-                      key={profile.id}
-                      variants={itemVariants}
+                      key={p.id}
                       whileHover={{ x: 4 }}
-                      whileTap={{ scale: pendingSelect === profile.id ? 0.95 : 0.98 }}
-                      onClick={() => handleQuickProfileLogin(profile, selectedRole)}
-                      className="w-full text-left p-3.5 rounded-2xl bg-[#2A1D26]/90 hover:bg-[#3a2434] border border-white/10 hover:border-white/25 transition-colors flex items-center justify-between group cursor-pointer"
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleQuickProfileLogin(p, selectedRole)}
+                      className={`w-full p-3.5 rounded-2xl border transition-all text-left flex items-center justify-between cursor-pointer ${
+                        isPending
+                          ? 'border-[#FF3E41] bg-[#FF3E41]/20'
+                          : 'border-white/10 bg-[#2A1D26]/70 hover:border-white/30 hover:bg-[#2A1D26]'
+                      }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-[#4C3549] border border-white/15 text-white font-bold flex items-center justify-center text-sm">
-                          {profile.name.charAt(0)}
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF3E41] to-[#DF367C] text-white font-bold flex items-center justify-center text-sm shadow-md">
+                          {p.name.charAt(0)}
                         </div>
                         <div>
-                          <div className="text-xs font-bold text-white">{profile.name}</div>
-                          <div className="text-[10px] text-[#FF7099] font-mono">{profile.regNumber}</div>
-                          <div className="text-[10px] text-white/50">{profile.department}</div>
+                          <div className="font-bold text-white text-sm">{p.name}</div>
+                          <div className="text-xs text-white/50 font-mono">
+                            {p.regNumber} &bull; {p.department}
+                            {'year' in p && ` &bull; Yr ${p.year}`}
+                          </div>
                         </div>
                       </div>
-                      <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
+
+                      <div className="flex items-center gap-2">
+                        {isPending ? (
+                          <CheckCircle2 className="w-5 h-5 text-[#FF3E41] animate-spin" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-white/40 group-hover:text-white">
+                            <ArrowRight className="w-4 h-4" />
+                          </div>
+                        )}
+                      </div>
                     </motion.button>
-                  ))}
-                </motion.div>
-              </AnimatePresence>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
           {/* Right: Custom Login Form */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.35, delay: 0.15 }}
-            className="lg:col-span-2 bg-[#4C3549]/95 border border-white/15 rounded-3xl p-6 space-y-5 flex flex-col justify-between shadow-2xl backdrop-blur-md"
-          >
-            <div>
-              <h2 className="text-lg font-black text-white font-display tracking-wide mb-1">
-                CUSTOM LOGIN
-              </h2>
-              <p className="text-[11px] text-white/60 font-mono">Enter your own credentials</p>
+          <div className="lg:col-span-2">
+            <div className="bg-[#4C3549]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl space-y-4 h-full flex flex-col justify-between">
+              <div>
+                <span className="text-xs font-mono text-white/60 block mb-1">MANUAL CREDENTIALS</span>
+                <h2 className="text-lg font-bold text-white font-display">Sign In as {roles.find((r) => r.role === selectedRole)?.label}</h2>
+                <p className="text-xs text-white/50 mt-1">
+                  Enter custom details to instantiate an active DBMS session.
+                </p>
+
+                <form onSubmit={handleCustomLogin} className="space-y-3.5 mt-5">
+                  <div>
+                    <label className="block text-[11px] font-mono text-white/60 mb-1">FULL NAME</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. John Doe"
+                      value={customName}
+                      onChange={(e) => setCustomName(e.target.value)}
+                      className="w-full bg-[#2A1D26] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#FF3E41]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono text-white/60 mb-1">
+                      {selectedRole === 'student' ? 'REGISTRATION NUMBER' : 'EMPLOYEE ID / BADGE'}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={selectedRole === 'student' ? 'e.g. 22BCE1001' : 'e.g. STAFF-99'}
+                      value={customIdentifier}
+                      onChange={(e) => setCustomIdentifier(e.target.value)}
+                      className="w-full bg-[#2A1D26] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#FF3E41]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono text-white/60 mb-1">DEPARTMENT / SCHOOL</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. SCOPE, SENSE, Operations"
+                      value={customDept}
+                      onChange={(e) => setCustomDept(e.target.value)}
+                      className="w-full bg-[#2A1D26] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#FF3E41]"
+                    />
+                  </div>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    className="w-full mt-4 py-3 rounded-2xl bg-gradient-to-r from-[#FF3E41] to-[#DF367C] text-white font-bold text-xs font-mono shadow-xl flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>Enter Festival Platform</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </motion.button>
+                </form>
+              </div>
+
+              <div className="pt-4 border-t border-white/10 text-center">
+                <Link to="/register" className="text-xs text-[#FF7099] hover:underline font-mono">
+                  Register new student profile &rarr;
+                </Link>
+              </div>
             </div>
-            <form onSubmit={handleCustomLogin} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-mono text-white/60 uppercase">Your Name</label>
-                <input
-                  type="text"
-                  value={customName}
-                  onChange={(e) => setCustomName(e.target.value)}
-                  placeholder="e.g. Priya Nair"
-                  className="w-full bg-[#2A1D26] border border-white/15 rounded-xl px-4 py-3 text-sm text-white font-mono placeholder-white/30 focus:outline-none focus:border-[#FF3E41]"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-mono text-white/60 uppercase">
-                  {selectedRole === 'student' ? 'Reg. Number' : 'Staff / Employee ID'}
-                </label>
-                <input
-                  type="text"
-                  value={customIdentifier}
-                  onChange={(e) => setCustomIdentifier(e.target.value)}
-                  placeholder={selectedRole === 'student' ? 'RA2111003010142' : 'STF-GATE-01'}
-                  className="w-full bg-[#2A1D26] border border-white/15 rounded-xl px-4 py-3 text-sm text-white font-mono placeholder-white/30 focus:outline-none focus:border-[#FF3E41]"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-mono text-white/60 uppercase">Department</label>
-                <input
-                  type="text"
-                  value={customDept}
-                  onChange={(e) => setCustomDept(e.target.value)}
-                  placeholder="Computer Science & Engineering"
-                  className="w-full bg-[#2A1D26] border border-white/15 rounded-xl px-4 py-3 text-sm text-white font-mono placeholder-white/30 focus:outline-none focus:border-[#FF3E41]"
-                />
-              </div>
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                type="submit"
-                className="w-full py-3.5 rounded-2xl bg-[#FF3E41] hover:bg-[#e03235] text-white font-bold font-mono text-sm transition-all shadow-xl flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span>
-                  Enter as{' '}
-                  {selectedRole === 'student'
-                    ? 'Student'
-                    : selectedRole === 'gate_staff'
-                    ? 'Gate Staff'
-                    : 'Admin'}
-                </span>
-                <ArrowRight className="w-4 h-4" />
-              </motion.button>
-            </form>
-            <div className="text-center">
-              <Link to="/register" className="text-[11px] font-mono text-[#FF7099] hover:underline">
-                New student? Register here &rarr;
-              </Link>
-            </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>

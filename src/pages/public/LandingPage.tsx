@@ -111,6 +111,19 @@ export const LandingPage: React.FC = () => {
           className="relative z-20 max-w-4xl mx-auto px-4 text-center space-y-5 select-none"
         >
           <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="flex justify-center mb-1"
+          >
+            <img
+              src="/vibrance-logo.png"
+              alt="VIT Chennai Vibrance 2026"
+              className="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover shadow-[0_0_45px_rgba(255,62,65,0.5)] ring-4 ring-[#FF3E41]/60 bg-black animate-pulse"
+            />
+          </motion.div>
+
+          <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}

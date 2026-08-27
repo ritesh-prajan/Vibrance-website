@@ -27,9 +27,11 @@ export const IntactTicketCard: React.FC<IntactTicketCardProps> = ({ booking, onC
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF3E41] to-[#DF367C] text-white font-display font-black text-lg flex items-center justify-center shadow-md">
-            V
-          </div>
+          <img
+            src="/vibrance-logo.png"
+            alt="Vibrance 2026"
+            className="w-11 h-11 rounded-full object-cover shadow-md ring-2 ring-[#FF3E41]/50 bg-black"
+          />
           <div>
             <span className="text-[10px] font-mono text-[#FF7099] font-bold">
               REF: {booking.bookingRef}
@@ -93,6 +95,7 @@ export const IntactTicketCard: React.FC<IntactTicketCardProps> = ({ booking, onC
         <div className="flex items-center gap-2">
           {booking.status === 'confirmed' && onCancel && (
             <button
+              type="button"
               onClick={() => onCancel(booking)}
               className="px-3 py-2 rounded-xl text-xs font-mono text-red-400 hover:bg-red-500/15 transition-colors cursor-pointer"
             >
