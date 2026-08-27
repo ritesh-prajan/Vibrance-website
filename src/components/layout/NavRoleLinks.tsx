@@ -28,7 +28,7 @@ export const NavRoleLinks: React.FC<NavRoleLinksProps> = ({ role }) => {
     );
   }
 
-  if (role === 'staff') {
+  if (role === 'gate_staff' || (role as any) === 'staff') {
     return (
       <nav className="hidden md:flex items-center gap-1 font-mono text-xs">
         <NavLink to="/verify" className={({ isActive }) => linkClass(isActive, 'bg-[#DF367C]')}>
@@ -49,6 +49,9 @@ export const NavRoleLinks: React.FC<NavRoleLinksProps> = ({ role }) => {
         </NavLink>
         <NavLink to="/admin/events" className={({ isActive }) => linkClass(isActive, 'bg-[#883955]')}>
           Events Admin
+        </NavLink>
+        <NavLink to="/admin/users" className={({ isActive }) => linkClass(isActive, 'bg-[#883955]')}>
+          Staff &amp; Users
         </NavLink>
         <NavLink to="/admin/concurrency" className={({ isActive }) => linkClass(isActive, 'bg-[#883955]')}>
           2PL Concurrency Lab

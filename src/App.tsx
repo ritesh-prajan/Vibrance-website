@@ -28,6 +28,7 @@ import { VerifyHistoryPage } from './pages/staff/VerifyHistoryPage';
 // Admin Pages
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { AdminEventsPage } from './pages/admin/AdminEventsPage';
+import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { AdminConcurrencyLabPage } from './pages/admin/AdminConcurrencyLabPage';
 import { AdminAuditLogsPage } from './pages/admin/AdminAuditLogsPage';
 
@@ -175,6 +176,16 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
+        path="/admin/users"
+        element={
+          <RequireAuth allowedRoles={['admin']}>
+            <AppLayout>
+              <AdminUsersPage />
+            </AppLayout>
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/admin/concurrency-lab"
         element={
           <RequireAuth allowedRoles={['admin']}>
@@ -185,7 +196,27 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
+        path="/admin/concurrency"
+        element={
+          <RequireAuth allowedRoles={['admin']}>
+            <AppLayout>
+              <AdminConcurrencyLabPage />
+            </AppLayout>
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/admin/audit-logs"
+        element={
+          <RequireAuth allowedRoles={['admin']}>
+            <AppLayout>
+              <AdminAuditLogsPage />
+            </AppLayout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/audit"
         element={
           <RequireAuth allowedRoles={['admin']}>
             <AppLayout>

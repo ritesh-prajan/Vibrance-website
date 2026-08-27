@@ -3,6 +3,8 @@ import {
   FestEvent,
   Seat,
   UserProfile,
+  UserRole,
+  EventCategory,
   Booking,
   ScanRecord,
   AuditLog,
@@ -18,11 +20,13 @@ import {
   MOCK_STUDENT_PROFILES,
   MOCK_STAFF_PROFILES,
   MOCK_ADMIN_PROFILES,
+  generateSeatsForEvent,
 } from '../data/mockEvents';
 import { getEventTiming } from '../utils/timeUtils';
 
 const STORAGE_KEYS = {
   USER: 'vibrance26_current_user',
+  USERS: 'vibrance26_users_v2',
   EVENTS: 'vibrance26_events_v2',
   BOOKINGS: 'vibrance26_bookings_v2',
   LOGS: 'vibrance26_audit_logs_v2',
@@ -37,9 +41,35 @@ interface FestContextType {
   loginAsAdmin: (name?: string, regNumber?: string, dept?: string) => void;
   logout: () => void;
 
+  users: UserProfile[];
+  addUser: (userData: {
+    name: string;
+    regNumber: string;
+    email?: string;
+    role: UserRole;
+    department: string;
+    year?: string;
+  }) => UserProfile;
+  deleteUser: (userId: string) => void;
+
   events: FestEvent[];
   selectedEvent: FestEvent | null;
   setSelectedEvent: (event: FestEvent | null) => void;
+  addEvent: (eventData: {
+    title: string;
+    category: EventCategory;
+    artistOrHost: string;
+    date: string;
+    time: string;
+    venue: string;
+    basePrice: number;
+    tag?: string;
+    shortDesc?: string;
+    totalSeats?: number;
+    startOffsetHours?: number;
+  }) => FestEvent;
+  updateEvent: (updatedEvent: FestEvent) => void;
+  deleteEvent: (eventId: string) => void;
 
   activeSeat: Seat | null;
   activeSeatEventId: string | null;
@@ -93,6 +123,18 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     return MOCK_STUDENT_PROFILES[0];
+  });
+
+  const [users, setUsers] = useState<UserProfile[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.USERS);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return [...MOCK_STUDENT_PROFILES, ...MOCK_STAFF_PROFILES, ...MOCK_ADMIN_PROFILES];
+      }
+    }
+    return [...MOCK_STUDENT_PROFILES, ...MOCK_STAFF_PROFILES, ...MOCK_ADMIN_PROFILES];
   });
 
   const [events, setEvents] = useState<FestEvent[]>(() => {
@@ -192,6 +234,10 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem(STORAGE_KEYS.SCANS, JSON.stringify(scanHistory));
   }, [scanHistory]);
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+  }, [users]);
+
   const addAuditLog = useCallback((log: Omit<AuditLog, 'id' | 'timestamp'>) => {
     const newEntry: AuditLog = {
       ...log,
@@ -259,6 +305,151 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem(STORAGE_KEYS.USER);
+  };
+
+  // Event Management CRUD
+  const addEvent = (eventData: {
+    title: string;
+    category: EventCategory;
+    artistOrHost: string;
+    date: string;
+    time: string;
+    venue: string;
+    basePrice: number;
+    tag?: string;
+    shortDesc?: string;
+    totalSeats?: number;
+    startOffsetHours?: number;
+  }): FestEvent => {
+    const id = `evt-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+    const totalSeats = eventData.totalSeats || 48;
+    const seats = generateSeatsForEvent(id, eventData.basePrice, totalSeats);
+    const now = Date.now();
+    const startOffset = (eventData.startOffsetHours ?? 24) * 3600 * 1000;
+    const newEvent: FestEvent = {
+      id,
+      title: eventData.title,
+      category: eventData.category,
+      artistOrHost: eventData.artistOrHost,
+      date: eventData.date,
+      time: eventData.time,
+      venue: eventData.venue,
+      basePrice: eventData.basePrice,
+      totalSeats: seats.length,
+      availableSeats: seats.filter((s) => s.status === 'available').length,
+      lockedSeatsCount: 0,
+      bookedSeatsCount: 0,
+      tag: eventData.tag || 'NEWLY ADDED EVENT',
+      shortDesc: eventData.shortDesc || 'Newly created festival event stage.',
+      seats,
+      startTimestamp: now + startOffset,
+      endTimestamp: now + startOffset + 3 * 3600 * 1000,
+    };
+
+    setEvents((prev) => [newEvent, ...prev]);
+
+    addAuditLog({
+      action: 'EVENT_INSERT',
+      eventId: id,
+      eventTitle: eventData.title,
+      userName: currentUser?.name || 'Administrator',
+      regNumber: currentUser?.regNumber || 'ADMIN-SYS',
+      status: 'CONFIRMED',
+      details: `Created new event "${eventData.title}" (${eventData.category}) at ${eventData.venue} for ₹${eventData.basePrice}. Total Seats: ${seats.length}.`,
+    });
+
+    return newEvent;
+  };
+
+  const updateEvent = (updatedEvent: FestEvent) => {
+    setEvents((prev) =>
+      prev.map((e) => (e.id === updatedEvent.id ? { ...e, ...updatedEvent } : e))
+    );
+    if (selectedEvent?.id === updatedEvent.id) {
+      setSelectedEvent(updatedEvent);
+    }
+
+    addAuditLog({
+      action: 'EVENT_UPDATE',
+      eventId: updatedEvent.id,
+      eventTitle: updatedEvent.title,
+      userName: currentUser?.name || 'Administrator',
+      regNumber: currentUser?.regNumber || 'ADMIN-SYS',
+      status: 'CONFIRMED',
+      details: `Updated event details for "${updatedEvent.title}" (Venue: ${updatedEvent.venue}, Base Price: ₹${updatedEvent.basePrice}).`,
+    });
+  };
+
+  const deleteEvent = (eventId: string) => {
+    const target = events.find((e) => e.id === eventId);
+    setEvents((prev) => prev.filter((e) => e.id !== eventId));
+    if (selectedEvent?.id === eventId) {
+      setSelectedEvent(null);
+    }
+    if (activeSeatEventId === eventId) {
+      releaseActiveSeat();
+    }
+
+    addAuditLog({
+      action: 'EVENT_DELETE',
+      eventId,
+      eventTitle: target?.title || eventId,
+      userName: currentUser?.name || 'Administrator',
+      regNumber: currentUser?.regNumber || 'ADMIN-SYS',
+      status: 'EXPIRED',
+      details: `Deleted event "${target?.title || eventId}" from festival lineup.`,
+    });
+  };
+
+  // User & Staff Management CRUD
+  const addUser = (userData: {
+    name: string;
+    regNumber: string;
+    email?: string;
+    role: UserRole;
+    department: string;
+    year?: string;
+  }): UserProfile => {
+    const id = `usr-${userData.role.substring(0, 3)}-${Date.now().toString(36)}`;
+    const newUser: UserProfile = {
+      id,
+      name: userData.name,
+      regNumber: userData.regNumber,
+      email: userData.email || `${userData.name.toLowerCase().replace(/\s+/g, '.')}@vibrance.edu`,
+      role: userData.role,
+      department: userData.department,
+      year: userData.year || (userData.role === 'student' ? '1st Year (B.Tech)' : 'Staff Lead'),
+      avatarSeed: userData.name.toLowerCase().split(' ')[0],
+    };
+
+    setUsers((prev) => [newUser, ...prev]);
+
+    addAuditLog({
+      action: 'USER_REGISTER',
+      eventId: 'SYSTEM',
+      eventTitle: 'User Account Provisioning',
+      userName: currentUser?.name || 'Administrator',
+      regNumber: currentUser?.regNumber || 'ADMIN-SYS',
+      status: 'CONFIRMED',
+      details: `Provisioned new account for ${userData.name} (Role: ${userData.role}, ID: ${userData.regNumber}, Dept: ${userData.department}).`,
+    });
+
+    return newUser;
+  };
+
+  const deleteUser = (userId: string) => {
+    const target = users.find((u) => u.id === userId);
+    setUsers((prev) => prev.filter((u) => u.id !== userId));
+
+    addAuditLog({
+      action: 'USER_DELETE',
+      eventId: 'SYSTEM',
+      eventTitle: 'User Account Deprovisioning',
+      userName: currentUser?.name || 'Administrator',
+      regNumber: currentUser?.regNumber || 'ADMIN-SYS',
+      status: 'EXPIRED',
+      details: `Deprovisioned user account for ${target?.name || userId} (${target?.role || 'Unknown'}).`,
+    });
   };
 
   const selectSeatForBooking = (event: FestEvent, seat: Seat): boolean => {
@@ -704,9 +895,15 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginAsGateStaff,
         loginAsAdmin,
         logout,
+        users,
+        addUser,
+        deleteUser,
         events,
         selectedEvent,
         setSelectedEvent,
+        addEvent,
+        updateEvent,
+        deleteEvent,
         activeSeat,
         activeSeatEventId,
         seatLockTimeRemaining,

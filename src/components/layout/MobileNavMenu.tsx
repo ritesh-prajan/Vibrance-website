@@ -44,6 +44,7 @@ export const MobileNavMenu: React.FC<MobileNavMenuProps> = ({
             <>
               <NavLink to="/admin" onClick={onClose} className="block py-2 text-white">Dashboard</NavLink>
               <NavLink to="/admin/events" onClick={onClose} className="block py-2 text-white">Events Admin</NavLink>
+              <NavLink to="/admin/users" onClick={onClose} className="block py-2 text-white">Staff &amp; Users</NavLink>
               <NavLink to="/admin/concurrency" onClick={onClose} className="block py-2 text-white">2PL Lab</NavLink>
               <NavLink to="/admin/audit" onClick={onClose} className="block py-2 text-white">Audit Logs</NavLink>
             </>

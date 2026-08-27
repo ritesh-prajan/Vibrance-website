@@ -63,11 +63,12 @@ export const AdminDashboardPage: React.FC = () => {
       </div>
 
       {/* Quick Action Navigation Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { to: '/admin/concurrency-lab', icon: <Cpu className="w-5 h-5" />, iconBg: '#DF367C', title: 'CONCURRENCY SIMULATOR LAB', desc: 'Benchmark database isolation strategies (No Locking vs Strict 2PL vs OCC) with live side-by-side transaction execution tables.' },
-          { to: '/admin/events', icon: <Calendar className="w-5 h-5" />, iconBg: '#883955', title: 'INVENTORY & EVENT MANAGEMENT', desc: 'Manage stage event capacities, modify base pricing tiers, and inspect per-event seat contention metrics.' },
-          { to: '/admin/audit-logs', icon: <Activity className="w-5 h-5" />, iconBg: '#FF3E41', title: 'SYSTEM AUDIT & TRANSACTION LOGS', desc: 'Inspect all ACID commits, lock grants, timeout expirations, overbooking anomalies, and gate verification check-ins.' },
+          { to: '/admin/concurrency-lab', icon: <Cpu className="w-5 h-5" />, iconBg: '#DF367C', title: 'CONCURRENCY SIMULATOR', desc: 'Benchmark database isolation strategies (No Locking vs Strict 2PL vs OCC) with live side-by-side transaction execution.' },
+          { to: '/admin/events', icon: <Calendar className="w-5 h-5" />, iconBg: '#883955', title: 'EVENT & STAGE INVENTORY', desc: 'Create new stages, edit pricing tiers, adjust total capacity, and delete events with live ACID logging.' },
+          { to: '/admin/users', icon: <ShieldCheck className="w-5 h-5" />, iconBg: '#10B981', title: 'STAFF & USER PROVISIONING', desc: 'Provision gate security personnel, assign scanner badge IDs, manage student profiles, and test login.' },
+          { to: '/admin/audit-logs', icon: <Activity className="w-5 h-5" />, iconBg: '#FF3E41', title: 'SYSTEM AUDIT & LOGS', desc: 'Inspect all ACID commits, lock grants, timeout expirations, overbooking anomalies, and gate verification logs.' },
         ].map(({ to, icon, iconBg, title, desc }, i) => (
           <motion.div
             key={to}
