@@ -4,6 +4,7 @@ import { useFest } from '../../context/FestContext';
 import { Breadcrumbs } from '../../components/common/Breadcrumbs';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { EmptyState } from '../../components/common/EmptyState';
+import { motion } from 'framer-motion';
 import {
   Calendar,
   Clock,
@@ -50,11 +51,16 @@ export const TicketPage: React.FC = () => {
         backLink={{ label: 'Back to My Bookings', path: '/my-bookings' }}
       />
 
-      <div className="bg-[#10B981]/20 border border-[#10B981]/40 rounded-2xl p-4 flex items-center justify-between gap-3 text-xs font-mono text-[#10B981]">
+      {/* Confirmation Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-[#10B981]/20 border border-[#10B981]/40 rounded-2xl p-4 flex items-center justify-between gap-3 text-xs font-mono text-[#10B981]"
+      >
         <div className="flex items-center gap-2">
           <CheckCircle2 className="w-5 h-5 shrink-0" />
           <span>
-            <strong>Booking Confirmed & Serialized!</strong> Reference code: {booking.bookingRef}
+            <strong>Booking Confirmed &amp; Serialized!</strong> Reference code: {booking.bookingRef}
           </span>
         </div>
         <Link
@@ -63,9 +69,15 @@ export const TicketPage: React.FC = () => {
         >
           View in My Bookings &rarr;
         </Link>
-      </div>
+      </motion.div>
 
-      <div className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-6 ticket-notch-left ticket-notch-right">
+      {/* Digital Festival Pass Card Reveal */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-6 ticket-notch-left ticket-notch-right"
+      >
         <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-white/10">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF3E41] to-[#DF367C] text-white font-display font-black text-2xl flex items-center justify-center shadow-lg">
@@ -97,92 +109,77 @@ export const TicketPage: React.FC = () => {
               </div>
 
               <div className="p-3.5 rounded-xl bg-[#2A1D26] border border-white/10 space-y-1">
-                <div className="text-[10px] text-white/40 uppercase">Seat & Tier</div>
+                <div className="text-[10px] text-white/40 uppercase">Seat &amp; Tier</div>
                 <div className="font-black text-white text-base">Seat {booking.seatLabel}</div>
-                <div className="text-[#FF7099]">{booking.seatCategory.replace('_', ' ')}</div>
-                <div className="text-[10px] text-white/50">Admit One Pass</div>
+                <div className="text-white/60">Tier: {booking.tier}</div>
+                <div className="text-[#10B981] font-bold">Paid: ₹{booking.amount}</div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#2A1D26] border border-white/10 space-y-1">
+                <div className="text-[10px] text-white/40 uppercase">Date &amp; Schedule</div>
+                <div className="text-white font-bold">{booking.date}</div>
+                <div className="text-white/60">{booking.time}</div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#2A1D26] border border-white/10 space-y-1">
+                <div className="text-[10px] text-white/40 uppercase">Venue Stage</div>
+                <div className="text-white font-bold truncate">{booking.venue}</div>
+                <div className="text-[#FF7099]">Gate Post Alpha</div>
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-[#2A1D26] border border-white/10 space-y-2 text-xs font-mono">
-              <div className="flex items-center gap-2 text-white">
-                <Calendar className="w-4 h-4 text-[#FF7099]" />
-                <span className="font-bold">{booking.eventDate}</span>
-                <span>•</span>
-                <Clock className="w-4 h-4 text-[#FF7099]" />
-                <span>{booking.eventTime}</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/70">
-                <MapPin className="w-4 h-4 text-[#FF7099]" />
-                <span>{booking.eventVenue}</span>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between p-3.5 rounded-xl bg-[#883955]/30 border border-[#883955]/50 text-xs font-mono">
+            <div className="p-4 rounded-2xl bg-[#883955]/30 border border-[#FF7099]/30 text-xs font-mono flex items-center gap-3">
+              <ShieldCheck className="w-6 h-6 text-[#FF7099] shrink-0" />
               <div>
-                <span className="text-white/50">Amount Paid: </span>
-                <strong className="text-white font-bold">₹{booking.amount}</strong>
-              </div>
-              <div>
-                <span className="text-white/50">Payment Method: </span>
-                <span className="text-[#FF7099]">{booking.paymentMethod}</span>
+                <span className="font-bold text-white">ACID Serializable Guarantee:</span>
+                <p className="text-white/70 text-[11px] mt-0.5">
+                  This e-pass is backed by Strict 2PL concurrency verification. Present QR code at the arena gate.
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-[#2A1D26] border border-white/10 rounded-2xl p-5 flex flex-col items-center justify-center text-center space-y-3">
-            <div className="p-3 bg-white rounded-xl shadow-lg">
-              <QrCode className="w-28 h-28 text-black" />
-            </div>
-
-            <div className="space-y-1 font-mono">
-              <div className="text-[10px] text-white/40 uppercase tracking-widest">Entry Ref Code</div>
-              <div className="text-xs font-bold text-[#FF7099] bg-[#4C3549] px-2 py-1 rounded border border-white/10">
+          {/* QR Code Placeholder with Staggered Fade/Scale In */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.15, duration: 0.3 }}
+            className="flex flex-col items-center justify-between p-5 bg-[#2A1D26] rounded-2xl border border-white/15 text-center space-y-4"
+          >
+            <div className="space-y-1">
+              <span className="text-[10px] font-mono text-white/40 uppercase">Digital Gate Pass QR</span>
+              <div className="p-4 bg-white rounded-2xl shadow-inner flex items-center justify-center my-2">
+                <QrCode className="w-32 h-32 text-black" />
+              </div>
+              <div className="text-[11px] font-mono font-bold text-[#FF7099]">
                 {booking.bookingRef}
               </div>
             </div>
 
-            <p className="text-[10px] text-white/50 font-sans-body leading-tight">
-              Scan this QR code or provide reference at Gate Entry Security.
-            </p>
-          </div>
+            <div className="w-full flex items-center gap-2 pt-2 border-t border-white/10 font-mono text-xs">
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => window.print()}
+                className="flex-1 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Save</span>
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  navigator.clipboard?.writeText(booking.bookingRef);
+                  alert('Pass reference copied to clipboard!');
+                }}
+                className="flex-1 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Share</span>
+              </motion.button>
+            </div>
+          </motion.div>
         </div>
-
-        {booking.status === 'checked_in' && booking.checkedInAt && (
-          <div className="p-3 rounded-xl bg-[#DF367C]/20 border border-[#DF367C]/40 text-xs font-mono text-[#FF7099] flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 shrink-0" />
-            <span>
-              Admitted at Gate: {new Date(booking.checkedInAt).toLocaleTimeString()} by Staff: {booking.checkedInBy?.name || 'Gate Staff'}
-            </span>
-          </div>
-        )}
-
-        <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => alert('Demo Stub: Ticket PDF downloaded successfully.')}
-              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Download PDF</span>
-            </button>
-            <button
-              onClick={() => alert('Demo Stub: Pass link copied to clipboard.')}
-              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-              <span>Share Pass</span>
-            </button>
-          </div>
-
-          <Link
-            to="/my-bookings"
-            className="px-5 py-2 rounded-xl bg-[#FF3E41] hover:bg-[#e03235] text-white font-bold transition-all shadow-md flex items-center gap-1.5"
-          >
-            <span>View All My Bookings</span>
-          </Link>
-        </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useFest } from '../../context/FestContext';
 import { Breadcrumbs } from '../../components/common/Breadcrumbs';
+import { motion } from 'framer-motion';
 import {
   Clock,
   ShieldCheck,
@@ -32,6 +33,7 @@ export const CheckoutPage: React.FC = () => {
   const [department, setDepartment] = useState(currentUser?.department || 'Computer Science & Engineering');
   const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'CAMPUS_CARD' | 'NET_BANKING'>('UPI');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const formatTimer = (seconds: number) => {
@@ -52,7 +54,11 @@ export const CheckoutPage: React.FC = () => {
           backLink={{ label: 'Back to Seat Map', path: `/events/${event.id}/seats` }}
         />
 
-        <div className="bg-[#4C3549] border border-white/15 rounded-3xl p-8 sm:p-12 text-center max-w-xl mx-auto shadow-2xl space-y-5">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-[#4C3549] border border-white/15 rounded-3xl p-8 sm:p-12 text-center max-w-xl mx-auto shadow-2xl space-y-5"
+        >
           <div className="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center justify-center mx-auto shadow-lg">
             <Lock className="w-8 h-8" />
           </div>
@@ -78,7 +84,7 @@ export const CheckoutPage: React.FC = () => {
               <span>Select Seats Again</span>
             </Link>
           </div>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -98,38 +104,37 @@ export const CheckoutPage: React.FC = () => {
     setIsProcessing(true);
     setErrorMsg(null);
 
-    try {
-      const booking = await confirmBooking({
-        name,
-        regNumber,
-        department,
-        paymentMethod,
-      });
+    const booking = await confirmBooking({
+      name,
+      regNumber,
+      department,
+      paymentMethod,
+    });
 
-      if (booking) {
+    if (booking) {
+      setIsSuccess(true);
+      setTimeout(() => {
         navigate(`/ticket/${booking.id}`);
-      } else {
-        setErrorMsg('Booking transaction could not be committed. Please try again.');
-        setIsProcessing(false);
-      }
-    } catch {
-      setErrorMsg('Transaction failed due to concurrency conflict.');
+      }, 450);
+    } else {
       setIsProcessing(false);
+      setErrorMsg('Failed to serialize transaction. Lock lease expired or lost update prevented.');
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-5xl mx-auto">
       <Breadcrumbs
         items={[
           { label: 'Events Catalog', path: '/events' },
           { label: event.title, path: `/events/${event.id}` },
           { label: 'Seat Selection', path: `/events/${event.id}/seats` },
-          { label: 'Checkout' },
+          { label: 'Payment Checkout' },
         ]}
-        backLink={{ label: 'Back to Seat Map', path: `/events/${event.id}/seats` }}
+        backLink={{ label: 'Change Seat Selection', path: `/events/${event.id}/seats` }}
       />
 
+      {/* Sticky Hold Timer Warning Strip */}
       <div className="bg-[#4C3549] border-2 border-[#FF3E41] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-xl">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#FF3E41] text-white flex items-center justify-center font-bold">
@@ -137,15 +142,20 @@ export const CheckoutPage: React.FC = () => {
           </div>
           <div>
             <div className="text-xs font-mono font-bold text-white flex items-center gap-2">
-              <span>HOLD TIMER ACTIVE • SEAT [{activeSeat.row}-{activeSeat.number}]</span>
+              <span>HOLD EXPIRES IN</span>
               <span className="px-2 py-0.5 rounded bg-[#FF3E41] text-white text-[11px]">
                 {formatTimer(seatLockTimeRemaining)}
               </span>
             </div>
             <p className="text-[11px] text-white/70 font-sans-body">
-              Seat held with Exclusive X-Lock. Auto-releases if countdown reaches 0:00.
+              Seat [{activeSeat.row}-{activeSeat.number}] will be auto-released if payment is not finalized.
             </p>
           </div>
+        </div>
+
+        <div className="text-right font-mono">
+          <span className="text-[10px] text-white/40 uppercase block">Total Due</span>
+          <span className="text-xl font-black text-white font-mono">₹{totalAmount}</span>
         </div>
       </div>
 
@@ -156,213 +166,162 @@ export const CheckoutPage: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <form onSubmit={handleConfirm} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left: Attendee Details & Payment Selection */}
         <div className="lg:col-span-2 space-y-6">
-          <form onSubmit={handleConfirm} className="space-y-6">
-            <div className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 sm:p-8 space-y-4 shadow-2xl">
-              <h2 className="text-lg font-bold text-white font-display tracking-wide">
-                1. ATTENDEE VERIFICATION DETAILS
-              </h2>
+          <div className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl">
+            <h2 className="text-lg font-bold text-white font-display tracking-wide">
+              1. ATTENDEE VERIFICATION
+            </h2>
+
+            <div className="space-y-4 font-mono text-xs">
+              <div>
+                <label className="block text-white/70 mb-1 uppercase text-[10px]">
+                  Attendee Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full bg-[#2A1D26] border border-white/15 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-[#FF3E41]"
+                />
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-mono font-medium text-white/80 mb-1">
-                    Student Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-[#2A1D26] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-[#FF3E41]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-mono font-medium text-white/80 mb-1">
-                    Registration Number *
+                  <label className="block text-white/70 mb-1 uppercase text-[10px]">
+                    Registration / Roll Number *
                   </label>
                   <input
                     type="text"
                     required
                     value={regNumber}
                     onChange={(e) => setRegNumber(e.target.value)}
-                    className="w-full bg-[#2A1D26] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono placeholder-white/40 focus:outline-none focus:border-[#FF3E41]"
+                    className="w-full bg-[#2A1D26] border border-white/15 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-[#FF3E41]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white/70 mb-1 uppercase text-[10px]">
+                    Department
+                  </label>
+                  <input
+                    type="text"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    className="w-full bg-[#2A1D26] border border-white/15 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-[#FF3E41]"
                   />
                 </div>
               </div>
-
-              <div>
-                <label className="block text-xs font-mono font-medium text-white/80 mb-1">
-                  Department
-                </label>
-                <input
-                  type="text"
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                  className="w-full bg-[#2A1D26] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-[#FF3E41]"
-                />
-              </div>
             </div>
+          </div>
 
-            <div className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 sm:p-8 space-y-4 shadow-2xl">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-white font-display tracking-wide">
-                  2. PAYMENT METHOD (DEMO SANDBOX)
-                </h2>
-                <span className="text-[10px] font-mono text-white/40 uppercase">Dummy Gateway</span>
-              </div>
-
-              <div className="space-y-2.5">
-                <label
-                  onClick={() => setPaymentMethod('UPI')}
-                  className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-colors ${
-                    paymentMethod === 'UPI'
-                      ? 'bg-[#883955]/40 border-[#FF3E41] text-white'
-                      : 'bg-[#2A1D26] border-white/10 text-white/70 hover:bg-[#883955]/20'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Smartphone className="w-5 h-5 text-[#FF7099]" />
-                    <div>
-                      <div className="text-xs font-mono font-bold">UPI / QR Payment</div>
-                      <div className="text-[11px] text-white/50">Google Pay, PhonePe, Paytm, BHIM</div>
-                    </div>
-                  </div>
-                  <input
-                    type="radio"
-                    name="payment"
-                    checked={paymentMethod === 'UPI'}
-                    onChange={() => setPaymentMethod('UPI')}
-                    className="accent-[#FF3E41]"
-                  />
-                </label>
-
-                <label
-                  onClick={() => setPaymentMethod('CAMPUS_CARD')}
-                  className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-colors ${
-                    paymentMethod === 'CAMPUS_CARD'
-                      ? 'bg-[#883955]/40 border-[#FF3E41] text-white'
-                      : 'bg-[#2A1D26] border-white/10 text-white/70 hover:bg-[#883955]/20'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <CreditCard className="w-5 h-5 text-[#FF7099]" />
-                    <div>
-                      <div className="text-xs font-mono font-bold">Campus RFID Smartcard</div>
-                      <div className="text-[11px] text-white/50">Deduct from College Student Wallet</div>
-                    </div>
-                  </div>
-                  <input
-                    type="radio"
-                    name="payment"
-                    checked={paymentMethod === 'CAMPUS_CARD'}
-                    onChange={() => setPaymentMethod('CAMPUS_CARD')}
-                    className="accent-[#FF3E41]"
-                  />
-                </label>
-
-                <label
-                  onClick={() => setPaymentMethod('NET_BANKING')}
-                  className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-colors ${
-                    paymentMethod === 'NET_BANKING'
-                      ? 'bg-[#883955]/40 border-[#FF3E41] text-white'
-                      : 'bg-[#2A1D26] border-white/10 text-white/70 hover:bg-[#883955]/20'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Building className="w-5 h-5 text-[#FF7099]" />
-                    <div>
-                      <div className="text-xs font-mono font-bold">Net Banking / Debit Card</div>
-                      <div className="text-[11px] text-white/50">HDFC, SBI, ICICI, Axis Bank</div>
-                    </div>
-                  </div>
-                  <input
-                    type="radio"
-                    name="payment"
-                    checked={paymentMethod === 'NET_BANKING'}
-                    onChange={() => setPaymentMethod('NET_BANKING')}
-                    className="accent-[#FF3E41]"
-                  />
-                </label>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isProcessing}
-              className="w-full py-4 rounded-2xl bg-[#FF3E41] hover:bg-[#e03235] text-white text-xs sm:text-sm font-bold font-mono transition-all shadow-2xl flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              {isProcessing ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Committing Transaction to DBMS Engine...</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-5 h-5" />
-                  <span>Confirm & Commit Booking (₹{totalAmount})</span>
-                </>
-              )}
-            </button>
-          </form>
-        </div>
-
-        <div className="space-y-6">
-          <div className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 space-y-5 shadow-2xl">
+          <div className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl">
             <h2 className="text-lg font-bold text-white font-display tracking-wide">
-              ORDER BREAKDOWN
+              2. PAYMENT GATEWAY (SANDBOX SIMULATION)
             </h2>
 
-            <div className="space-y-3 text-xs font-mono">
-              <div className="p-3.5 rounded-xl bg-[#2A1D26] border border-white/10 space-y-1">
-                <div className="text-[10px] text-white/40 uppercase">Event</div>
-                <div className="font-bold text-white">{event.title}</div>
-                <div className="text-white/60">{event.date} • {event.time}</div>
-                <div className="text-white/40 truncate">{event.venue}</div>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-[#883955]/30 border border-[#883955]/50 space-y-2">
-                <div className="flex justify-between items-center text-white/70">
-                  <span>Seat Allocation:</span>
-                  <span className="font-bold text-white">
-                    Seat {activeSeat.row}-{activeSeat.number}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-white/70">
-                  <span>Seat Tier:</span>
-                  <span className="text-[#FF7099]">{activeSeat.category.replace('_', ' ')}</span>
-                </div>
-                <div className="flex justify-between items-center text-white/70">
-                  <span>Base Pass Price:</span>
-                  <span className="font-bold text-white">₹{basePrice}</span>
-                </div>
-                <div className="flex justify-between items-center text-white/70">
-                  <span>Convenience Fee:</span>
-                  <span>₹{convenienceFee}</span>
-                </div>
-                <div className="flex justify-between items-center text-white/70">
-                  <span>Festival GST (5%):</span>
-                  <span>₹{gst}</span>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[#2A1D26] border border-white/15 flex items-center justify-between">
-                <span className="text-xs font-mono font-bold text-white uppercase">Total Amount</span>
-                <span className="text-xl font-black text-white font-mono">₹{totalAmount}</span>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-[#2A1D26]/60 border border-white/10 text-[11px] font-mono text-white/60 space-y-1">
-              <div className="flex items-center gap-1.5 text-[#10B981]">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span className="font-bold">2PL Commit Protocol</span>
-              </div>
-              <p>On confirmation, exclusive lock transitions to permanently committed row record.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-xs">
+              {[
+                { id: 'UPI', label: 'UPI / QR', desc: 'GooglePay, PhonePe, Paytm', icon: <Smartphone className="w-5 h-5" /> },
+                { id: 'CAMPUS_CARD', label: 'Campus SmartCard', desc: 'Auto-debit from student wallet', icon: <CreditCard className="w-5 h-5" /> },
+                { id: 'NET_BANKING', label: 'Net Banking', desc: 'SBI, HDFC, ICICI, Axis', icon: <Building className="w-5 h-5" /> },
+              ].map((m) => (
+                <motion.button
+                  key={m.id}
+                  whileTap={{ scale: 0.96 }}
+                  type="button"
+                  onClick={() => setPaymentMethod(m.id as any)}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
+                    paymentMethod === m.id
+                      ? 'border-[#FF3E41] bg-[#FF3E41]/10 text-white'
+                      : 'border-white/10 bg-[#2A1D26] text-white/70 hover:border-white/20'
+                  }`}
+                >
+                  <div className="text-[#FF7099]">{m.icon}</div>
+                  <div>
+                    <div className="font-bold text-white">{m.label}</div>
+                    <div className="text-[10px] text-white/50">{m.desc}</div>
+                  </div>
+                </motion.button>
+              ))}
             </div>
           </div>
         </div>
-      </div>
+
+        {/* Right: Order Summary Sidebar */}
+        <div className="space-y-6">
+          <div className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 space-y-5 shadow-2xl">
+            <h2 className="text-lg font-bold text-white font-display tracking-wide">
+              ORDER SUMMARY
+            </h2>
+
+            <div className="space-y-3 font-mono text-xs">
+              <div className="p-3.5 rounded-xl bg-[#2A1D26] border border-white/10 space-y-1">
+                <div className="font-bold text-white">{event.title}</div>
+                <div className="text-white/60">{event.date} • {event.time}</div>
+                <div className="text-[#FF7099] pt-1">
+                  Seat: Row {activeSeat.row} - #{activeSeat.number} ({activeSeat.category})
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-white/10 text-white/80">
+                <div className="flex justify-between">
+                  <span className="text-white/60">Base Ticket Pass:</span>
+                  <span>₹{basePrice}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/60">Convenience / Tech Fee:</span>
+                  <span>₹{convenienceFee}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/60">GST (5%):</span>
+                  <span>₹{gst}</span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-white/10 text-base font-black text-white">
+                  <span>Total Amount:</span>
+                  <span className="text-[#FF7099]">₹{totalAmount}</span>
+                </div>
+              </div>
+            </div>
+
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              type="submit"
+              disabled={isProcessing}
+              className="w-full py-4 rounded-2xl bg-[#FF3E41] hover:bg-[#e03235] text-white font-bold font-mono text-sm transition-all shadow-xl flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75"
+            >
+              {isProcessing ? (
+                isSuccess ? (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="flex items-center gap-2 text-white"
+                  >
+                    <CheckCircle2 className="w-5 h-5 text-[#10B981]" />
+                    <span>Booking Confirmed!</span>
+                  </motion.div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <motion.span
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 0.6, repeat: Infinity, ease: 'linear' }}
+                      className="block w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                    />
+                    <span>Acquiring 2PL Commit...</span>
+                  </div>
+                )
+              ) : (
+                <>
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Pay ₹{totalAmount} &amp; Issue Pass</span>
+                </>
+              )}
+            </motion.button>
+          </div>
+        </div>
+      </form>
     </div>
   );
 };
