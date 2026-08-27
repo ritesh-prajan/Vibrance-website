@@ -34,7 +34,7 @@ export const MobileNavMenu: React.FC<MobileNavMenuProps> = ({
               <NavLink to="/profile" onClick={onClose} className="block py-2 text-white">Profile</NavLink>
             </>
           )}
-          {role === 'staff' && (
+          {(role === 'gate_staff' || (role as any) === 'staff') && (
             <>
               <NavLink to="/verify" onClick={onClose} className="block py-2 text-white">Gate Scanner</NavLink>
               <NavLink to="/verify/history" onClick={onClose} className="block py-2 text-white">Scan Log</NavLink>
