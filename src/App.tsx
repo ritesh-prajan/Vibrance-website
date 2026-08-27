@@ -7,6 +7,7 @@ import { AppLayout } from './components/layout/AppLayout';
 import { RequireAuth } from './components/layout/RequireAuth';
 
 // Public Pages
+import { LandingPage } from './pages/public/LandingPage';
 import { LoginPage } from './pages/public/LoginPage';
 import { RegisterPage } from './pages/public/RegisterPage';
 import { NotFoundPage } from './pages/public/NotFoundPage';
@@ -34,7 +35,7 @@ const RootRedirect: React.FC = () => {
   const { currentUser } = useFest();
 
   if (!currentUser) {
-    return <Navigate to="/login" replace />;
+    return <LandingPage />;
   }
 
   if (currentUser.role === 'admin') {
@@ -51,10 +52,10 @@ const RootRedirect: React.FC = () => {
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
-      {/* Root Route */}
+      {/* Root Route — Full-Bleed Animated Landing with Scroll-Linked Login */}
       <Route path="/" element={<RootRedirect />} />
 
-      {/* Public Pages */}
+      {/* Standalone Public Pages */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
