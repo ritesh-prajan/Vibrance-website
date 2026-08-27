@@ -3,49 +3,38 @@ import { Link } from 'react-router-dom';
 import { useFest } from '../../context/FestContext';
 import { Booking } from '../../types';
 import { EmptyState } from '../../components/common/EmptyState';
-import { getEventTiming, sortBookingsByTiming } from '../../utils/timeUtils';
 import { ETicketCard } from '../../components/ETicketCard';
-import { motion } from 'framer-motion';
+import { DiscoBookingControlBar } from '../../components/disco/DiscoBookingControlBar';
+import { useBookingFilters } from '../../hooks/useBookingFilters';
 import {
   Ticket,
-  Calendar,
-  Clock,
-  MapPin,
   AlertTriangle,
-  QrCode,
   Radio,
+  Sparkles,
+  Scissors,
 } from 'lucide-react';
 
 export const MyBookingsPage: React.FC = () => {
   const { myBookings, cancelBooking } = useFest();
-
-  const [filterTab, setFilterTab] = useState<'ALL' | 'UPCOMING' | 'LIVE' | 'CHECKED_IN' | 'EXPIRED'>('ALL');
   const [cancellingBooking, setCancellingBooking] = useState<Booking | null>(null);
 
-  const { upcoming, expired, live } = sortBookingsByTiming(myBookings);
-
-  const filteredBookings = myBookings.filter((b) => {
-    const t = getEventTiming(b);
-    if (filterTab === 'UPCOMING') return t.isUpcoming && b.status === 'confirmed';
-    if (filterTab === 'LIVE') return t.isLive;
-    if (filterTab === 'CHECKED_IN') return b.status === 'checked_in';
-    if (filterTab === 'EXPIRED') return t.isExpired || b.status === 'checked_in';
-    return true;
-  });
-
-  const sortedDisplayBookings = [...filteredBookings].sort((a, b) => {
-    const tA = getEventTiming(a);
-    const tB = getEventTiming(b);
-    if (tA.isLive && !tB.isLive) return -1;
-    if (!tA.isLive && tB.isLive) return 1;
-    if (tA.isUpcoming && tB.isUpcoming) return tA.startTimestamp - tB.startTimestamp;
-    if (tA.isUpcoming && tB.isExpired) return -1;
-    if (tA.isExpired && tB.isUpcoming) return 1;
-    return tB.endTimestamp - tA.endTimestamp;
-  });
-
-  const nextPass = upcoming[0] || live[0] || null;
-  const nextTiming = nextPass ? getEventTiming(nextPass) : null;
+  const {
+    searchQuery,
+    setSearchQuery,
+    selectedCategory,
+    setSelectedCategory,
+    statusFilter,
+    setStatusFilter,
+    sortBy,
+    setSortBy,
+    viewMode,
+    setViewMode,
+    sortedBookings,
+    groups,
+    resetFilters,
+    totalCount,
+    filteredCount,
+  } = useBookingFilters(myBookings);
 
   const handleConfirmCancel = () => {
     if (cancellingBooking) {
@@ -55,143 +44,137 @@ export const MyBookingsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 font-mono">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 font-mono">
+      {/* Header Banner */}
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#FF3E41]/25 text-[#FF7099] border border-[#FF3E41]/50">
+            <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#FF3E41]/25 text-[#FF7099] border border-[#FF3E41]/50 flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
               STUDENT PASS WALLET
             </span>
-            <span className="text-xs text-white/50 font-mono">Physical Pass Status &amp; Real-Time Tracking</span>
+            <span className="text-xs text-white/50 font-mono hidden sm:inline">
+              Physical Pass Lifecycle &bull; Real-Time Verification
+            </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white font-display tracking-wide mt-1">
+          <h1 className="text-2xl sm:text-4xl font-black text-white font-display tracking-wide mt-1">
             MY FESTIVAL PASSES &amp; BOOKINGS
           </h1>
         </div>
 
-        <Link
-          to="/events"
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#FF3E41] hover:bg-[#e03235] text-white text-xs font-bold font-mono transition-all shadow-md shrink-0"
-        >
-          <Ticket className="w-3.5 h-3.5" />
-          <span>Browse More Shows</span>
-        </Link>
-      </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-white/60 hidden sm:inline">
+            {filteredCount} of {totalCount} Passes
+          </span>
+          <Link
+            to="/events"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#FF3E41] hover:bg-[#e03235] text-white text-xs font-bold font-mono transition-all shadow-md shrink-0"
+          >
+            <Ticket className="w-3.5 h-3.5" />
+            <span>Browse More Shows</span>
+          </Link>
+        </div>
+      </header>
 
-      {/* 1. Next Up Highlight Card */}
-      {nextPass && nextTiming && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-br from-[#4C3549] to-[#883955] border-2 border-[#FF3E41]/60 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-4"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="px-3 py-1 rounded-full bg-[#FF3E41] text-white text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg">
-              <Radio className="w-3.5 h-3.5 animate-pulse" />
-              {nextTiming.isLive ? '🔴 YOUR PASS IS LIVE RIGHT NOW' : '⚡ YOUR NEXT UPCOMING PASS'}
-            </span>
-            <span className="text-xs font-mono text-white font-bold bg-black/30 px-3 py-1 rounded-full">
-              {nextTiming.countdownText}
-            </span>
-          </div>
+      {/* DISCO LIGHTS CONTROL BAR (Top Bar with Disco Lights, Search, Popdowns) */}
+      <DiscoBookingControlBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        totalResults={filteredCount}
+      />
 
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pt-2">
-            <div className="space-y-1">
-              <h2 className="text-2xl font-black text-white font-display tracking-wide">
-                {nextPass.eventTitle}
-              </h2>
-              <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-white/80 pt-1">
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-[#FF7099]" /> {nextTiming.formattedDate}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-[#FF7099]" /> {nextTiming.formattedTime}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-[#FF7099]" /> {nextPass.eventVenue}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 shrink-0 font-mono">
-              <div className="text-right hidden sm:block">
-                <div className="text-[10px] text-white/40 uppercase">Seat Assigned</div>
-                <div className="text-lg font-black text-white">Seat {nextPass.seatLabel}</div>
-              </div>
-              <Link
-                to={`/ticket/${nextPass.id}`}
-                className="px-5 py-3 rounded-2xl bg-[#FF3E41] hover:bg-[#e03235] text-white text-xs font-bold shadow-xl flex items-center gap-2 transition-transform hover:scale-105"
-              >
-                <QrCode className="w-4 h-4" />
-                <span>Show Gate QR Pass</span>
-              </Link>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* 2. Real-Time Status Filter Bar */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-white/10 text-xs font-mono">
-        <button
-          onClick={() => setFilterTab('ALL')}
-          className={`px-3.5 py-2 rounded-lg transition-colors cursor-pointer font-bold ${
-            filterTab === 'ALL' ? 'bg-[#883955] text-white' : 'text-white/60 hover:text-white hover:bg-[#4C3549]'
-          }`}
-        >
-          All Passes ({myBookings.length})
-        </button>
-        <button
-          onClick={() => setFilterTab('UPCOMING')}
-          className={`px-3.5 py-2 rounded-lg transition-colors cursor-pointer font-bold ${
-            filterTab === 'UPCOMING' ? 'bg-[#883955] text-white' : 'text-white/60 hover:text-white hover:bg-[#4C3549]'
-          }`}
-        >
-          Active / Intact ({upcoming.length})
-        </button>
-        <button
-          onClick={() => setFilterTab('LIVE')}
-          className={`px-3.5 py-2 rounded-lg transition-colors cursor-pointer font-bold text-red-400 ${
-            filterTab === 'LIVE' ? 'bg-red-500/25 text-red-300 border border-red-500/40' : 'hover:bg-[#4C3549]'
-          }`}
-        >
-          🔴 Live Stages ({live.length})
-        </button>
-        <button
-          onClick={() => setFilterTab('CHECKED_IN')}
-          className={`px-3.5 py-2 rounded-lg transition-colors cursor-pointer font-bold ${
-            filterTab === 'CHECKED_IN' ? 'bg-[#883955] text-white' : 'text-white/60 hover:text-white hover:bg-[#4C3549]'
-          }`}
-        >
-          Used / Torn ({myBookings.filter((b) => b.status === 'checked_in').length})
-        </button>
-        <button
-          onClick={() => setFilterTab('EXPIRED')}
-          className={`px-3.5 py-2 rounded-lg transition-colors cursor-pointer font-bold text-white/50 ${
-            filterTab === 'EXPIRED' ? 'bg-white/20 text-white' : 'hover:bg-[#4C3549]'
-          }`}
-        >
-          ⏱️ Expired ({expired.length})
-        </button>
-      </div>
-
-      {/* 3. Ticket Cards Listing (Intact or Torn) */}
-      {sortedDisplayBookings.length === 0 ? (
+      {/* Ticket Cards Listing */}
+      {sortedBookings.length === 0 ? (
         <EmptyState
-          title="No Passes in this Category"
-          description="You don't have any passes matching this schedule filter."
-          actionText="Browse Events Catalog"
-          actionPath="/events"
+          title="No Matching Festival Passes"
+          description="You don't have any festival passes matching your current search or category filter."
+          actionText="Reset All Filters"
+          onAction={resetFilters}
         />
-      ) : (
+      ) : viewMode === 'GRID' ? (
+        /* Unified List (Intact vs Torn) */
         <div className="space-y-6">
-          {sortedDisplayBookings.map((booking) => (
+          {sortedBookings.map((booking) => (
             <ETicketCard
               key={booking.id}
               booking={booking}
               onCancel={(b) => setCancellingBooking(b)}
             />
           ))}
+        </div>
+      ) : (
+        /* Categorized Swimlanes View */
+        <div className="space-y-8">
+          {/* Live Now Section */}
+          {groups.live.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-red-500/30">
+                <Radio className="w-4 h-4 text-red-400 animate-ping" />
+                <h2 className="text-sm font-black text-red-400 uppercase tracking-wider">
+                  🔴 LIVE RIGHT NOW ON STAGE ({groups.live.length})
+                </h2>
+              </div>
+              <div className="space-y-6">
+                {groups.live.map((booking) => (
+                  <ETicketCard
+                    key={booking.id}
+                    booking={booking}
+                    onCancel={(b) => setCancellingBooking(b)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Active / Intact Passes Section */}
+          {groups.intact.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-[#10B981]/30">
+                <Ticket className="w-4 h-4 text-[#10B981]" />
+                <h2 className="text-sm font-black text-[#10B981] uppercase tracking-wider">
+                  🎟️ ACTIVE / UPCOMING PASSES (INTACT) ({groups.intact.length})
+                </h2>
+              </div>
+              <div className="space-y-6">
+                {groups.intact.map((booking) => (
+                  <ETicketCard
+                    key={booking.id}
+                    booking={booking}
+                    onCancel={(b) => setCancellingBooking(b)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Used & Expired Passes (Torn) Section */}
+          {groups.torn.length > 0 && (
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center gap-2 pb-2 border-b border-white/10">
+                <Scissors className="w-4 h-4 text-white/40" />
+                <h2 className="text-sm font-black text-white/50 uppercase tracking-wider">
+                  ✂️ USED &amp; CONCLUDED PASSES (TORN) ({groups.torn.length})
+                </h2>
+              </div>
+              <div className="space-y-6">
+                {groups.torn.map((booking) => (
+                  <ETicketCard
+                    key={booking.id}
+                    booking={booking}
+                    onCancel={(b) => setCancellingBooking(b)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
