@@ -6,53 +6,77 @@ import { CrowdSilhouettes } from '../../components/landing/CrowdSilhouettes';
 import { StageLightBeams } from '../../components/landing/StageLightBeams';
 import { ParticleHazeCanvas } from '../../components/landing/ParticleHazeCanvas';
 import { LoginFormSection } from '../../components/landing/LoginFormSection';
-import { ChevronDown, Sparkles, Zap, ShieldCheck } from 'lucide-react';
+import { ChevronDown, Sparkles, Zap, ShieldCheck, ArrowDown, LogIn } from 'lucide-react';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 
 export const LandingPage: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const reduced = usePrefersReducedMotion();
 
-  // Scroll tracking across the 260vh track
+  // Scroll tracking across the 240vh track
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start start', 'end end'],
   });
 
-  // Track if hero is scrolled past to pause canvas particles
   const [isPastHero, setIsPastHero] = useState(false);
 
   useEffect(() => {
     const unsubscribe = scrollYProgress.on('change', (latest) => {
-      setIsPastHero(latest > 0.85);
+      setIsPastHero(latest > 0.35);
     });
     return () => unsubscribe();
   }, [scrollYProgress]);
 
   // Section 1: Hero title & content transforms
-  const heroTitleOpacity = useTransform(scrollYProgress, [0, 0.32], [1, 0]);
-  const heroTitleScale = useTransform(scrollYProgress, [0, 0.32], [1, 0.86]);
-  const heroTitleY = useTransform(scrollYProgress, [0, 0.32], [0, -45]);
+  const heroTitleOpacity = useTransform(scrollYProgress, [0, 0.28], [1, 0]);
+  const heroTitleScale = useTransform(scrollYProgress, [0, 0.28], [1, 0.88]);
+  const heroTitleY = useTransform(scrollYProgress, [0, 0.28], [0, -40]);
 
-  // Section 1: Stage & crowd visual layer dimming + fog rolling in
-  const heroSceneOpacity = useTransform(scrollYProgress, [0, 0.45, 0.85], [1, 0.45, 0.15]);
-  const heroDarkenOverlay = useTransform(scrollYProgress, [0, 0.55], [0, 0.82]);
-  const heroBackdropBlur = useTransform(scrollYProgress, [0.15, 0.6], [0, 14]);
+  // Section 1: Stage visual layer dimming + fog rolling in
+  const heroDarkenOverlay = useTransform(scrollYProgress, [0, 0.45], [0, 0.78]);
+  const heroBackdropBlur = useTransform(scrollYProgress, [0.1, 0.5], [0, 12]);
 
   // Section 2: Login card reveal
-  const loginOpacity = useTransform(scrollYProgress, [0.38, 0.68], [0, 1]);
-  const loginY = useTransform(scrollYProgress, [0.38, 0.68], [90, 0]);
-  const loginScale = useTransform(scrollYProgress, [0.38, 0.68], [0.94, 1]);
+  const loginOpacity = useTransform(scrollYProgress, [0.28, 0.58], [0, 1]);
+  const loginY = useTransform(scrollYProgress, [0.28, 0.58], [80, 0]);
+  const loginScale = useTransform(scrollYProgress, [0.28, 0.58], [0.95, 1]);
 
-  // Scroll down helper
-  const handleScrollDown = () => {
+  // Scroll down to login helper
+  const handleScrollToLogin = () => {
     if (!containerRef.current) return;
-    const scrollTarget = containerRef.current.scrollHeight * 0.72;
-    window.scrollTo({ top: scrollTarget, behavior: 'smooth' });
+    const target = containerRef.current.scrollHeight * 0.75;
+    window.scrollTo({ top: target, behavior: 'smooth' });
+  };
+
+  const handleScrollToHero = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
-    <div ref={containerRef} className="relative bg-[#2A1D26] text-[#F3EDF2] min-h-[250vh]">
+    <div ref={containerRef} className="relative bg-[#2A1D26] text-[#F3EDF2] min-h-[240vh]">
+      {/* Quick Nav Bar on Top Right */}
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+        {!isPastHero ? (
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={handleScrollToLogin}
+            className="px-4 py-2 rounded-full bg-[#FF3E41] hover:bg-[#e03235] text-white font-mono font-bold text-xs shadow-2xl flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Sign In / Personas &darr;</span>
+          </motion.button>
+        ) : (
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={handleScrollToHero}
+            className="px-4 py-2 rounded-full bg-[#4C3549]/90 hover:bg-[#883955] text-white border border-white/20 font-mono font-bold text-xs shadow-2xl flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+          >
+            <span>&uarr; Back to Hero Stage</span>
+          </motion.button>
+        )}
+      </div>
+
       {/* Sticky Full-Viewport Stage */}
       <div className="sticky top-0 h-screen w-full overflow-hidden flex flex-col justify-center items-center">
         {/* ─── LAYER 1: Ambient Gradient Blobs (Back) ─── */}
@@ -62,15 +86,15 @@ export const LandingPage: React.FC = () => {
         <StageLightBeams />
 
         {/* ─── LAYER 3: Canvas Particle Haze Field (Front of beams) ─── */}
-        <ParticleHazeCanvas isPaused={isPastHero} />
+        <ParticleHazeCanvas isPaused={false} />
 
         {/* ─── LAYER 4: Energetic Crowd Silhouettes (Bottom third) ─── */}
         <CrowdSilhouettes />
 
-        {/* Dynamic Darken + Fog Overlay (increases as user scrolls into login) */}
+        {/* Dynamic Darken + Fog Overlay */}
         <motion.div
           style={{
-            opacity: reduced ? 0.4 : heroDarkenOverlay,
+            opacity: reduced ? 0.35 : heroDarkenOverlay,
             backdropFilter: reduced ? 'none' : `blur(${heroBackdropBlur}px)`,
           }}
           className="pointer-events-none absolute inset-0 bg-[#2A1D26] z-15"
@@ -79,7 +103,7 @@ export const LandingPage: React.FC = () => {
         {/* ─── LAYER 5: Hero Main Headings & Content (Centered) ─── */}
         <motion.div
           style={{
-            opacity: reduced ? 1 : heroTitleOpacity,
+            opacity: reduced ? (isPastHero ? 0 : 1) : heroTitleOpacity,
             scale: reduced ? 1 : heroTitleScale,
             y: reduced ? 0 : heroTitleY,
             pointerEvents: isPastHero ? 'none' : 'auto',
@@ -109,7 +133,7 @@ export const LandingPage: React.FC = () => {
             Campus Fest Pass Reservations &bull; Real-time Seat Locking &bull; DBMS Concurrency Benchmark
           </p>
 
-          <div className="pt-3 flex flex-wrap items-center justify-center gap-4 text-xs font-mono text-white/60">
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-4 text-xs font-mono text-white/60">
             <span className="flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-[#10B981]" /> Strict 2PL ACID Concurrency
             </span>
@@ -119,31 +143,40 @@ export const LandingPage: React.FC = () => {
             </span>
           </div>
 
-          {/* Scroll down indicator button */}
-          <div className="pt-8">
+          {/* Direct CTA + Scroll indicator */}
+          <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
             <motion.button
-              onClick={handleScrollDown}
-              animate={reduced ? {} : { y: [0, 8, 0] }}
-              transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-              className="inline-flex flex-col items-center gap-1.5 text-xs font-mono text-[#FF7099] hover:text-white transition-colors cursor-pointer"
+              whileTap={{ scale: 0.96 }}
+              onClick={handleScrollToLogin}
+              className="px-6 py-3.5 rounded-2xl bg-[#FF3E41] hover:bg-[#e03235] text-white font-mono font-bold text-xs shadow-2xl flex items-center gap-2 cursor-pointer"
             >
-              <span className="tracking-widest uppercase text-[10px] font-bold">
-                SCROLL TO ENTER PASS PORTAL
-              </span>
-              <ChevronDown className="w-5 h-5 text-[#FF3E41]" />
+              <span>Get Passes &bull; Choose Persona</span>
+              <ArrowDown className="w-4 h-4" />
+            </motion.button>
+          </div>
+
+          <div className="pt-4">
+            <motion.button
+              onClick={handleScrollToLogin}
+              animate={reduced ? {} : { y: [0, 6, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+              className="inline-flex flex-col items-center gap-1 text-[11px] font-mono text-white/50 hover:text-white transition-colors cursor-pointer"
+            >
+              <span>SCROLL DOWN TO ENTER PORTAL</span>
+              <ChevronDown className="w-4 h-4 text-[#FF7099]" />
             </motion.button>
           </div>
         </motion.div>
 
-        {/* ─── LAYER 6: Scroll-Linked Login Form Card (Fades & slides up) ─── */}
+        {/* ─── LAYER 6: Scroll-Linked Login Form Card ─── */}
         <motion.div
           style={{
-            opacity: reduced ? 1 : loginOpacity,
+            opacity: reduced ? (isPastHero ? 1 : 0) : loginOpacity,
             y: reduced ? 0 : loginY,
             scale: reduced ? 1 : loginScale,
-            pointerEvents: 'auto',
+            pointerEvents: isPastHero ? 'auto' : 'none',
           }}
-          className="absolute inset-0 z-30 flex items-center justify-center py-6 overflow-y-auto"
+          className="absolute inset-0 z-30 flex items-center justify-center py-8 overflow-y-auto"
         >
           <LoginFormSection />
         </motion.div>
