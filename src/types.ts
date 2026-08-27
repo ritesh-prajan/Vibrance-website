@@ -3,7 +3,7 @@ export type UserRole = 'student' | 'admin' | 'gate_staff';
 export interface UserProfile {
   id: string;
   name: string;
-  regNumber: string; // e.g. student reg number or staff ID
+  regNumber: string;
   email: string;
   role: UserRole;
   department: string;
@@ -17,8 +17,7 @@ export type AdminProfile = UserProfile;
 
 export type BookingStatus = 'confirmed' | 'cancelled' | 'checked_in';
 export type LockStatus = 'available' | 'selected' | 'locked' | 'booked';
-export type ScanResultStatus = 'VALID' | 'ALREADY_USED' | 'INVALID';
-
+export type ScanResultStatus = 'VALID' | 'ALREADY_USED' | 'INVALID' | 'EXPIRED';
 
 export type EventCategory = 'PRO_SHOW' | 'EDM' | 'BATTLE_OF_BANDS' | 'DANCE' | 'HACKATHON' | 'COMEDY';
 
@@ -34,7 +33,7 @@ export interface Seat {
     userName: string;
     regNumber: string;
   };
-  lockExpiresAt?: number; // timestamp ms
+  lockExpiresAt?: number;
   bookedBy?: {
     userId: string;
     userName: string;
@@ -60,6 +59,8 @@ export interface FestEvent {
   tag: string;
   shortDesc: string;
   seats: Seat[];
+  startTimestamp?: number;
+  endTimestamp?: number;
 }
 
 export interface Booking {
@@ -88,13 +89,15 @@ export interface Booking {
     name: string;
     staffId: string;
   };
+  startTimestamp?: number;
+  endTimestamp?: number;
 }
 
 export interface ScanRecord {
   id: string;
   timestamp: number;
   query: string;
-  result: 'VALID' | 'ALREADY_USED' | 'INVALID';
+  result: ScanResultStatus;
   staffMember: {
     name: string;
     staffId: string;
@@ -104,71 +107,72 @@ export interface ScanRecord {
   eventTitle?: string;
   attendeeName?: string;
   seatLabel?: string;
+  message?: string;
   originalCheckedInAt?: number;
   originalCheckedInBy?: string;
-  message: string;
 }
 
 export type ConcurrencyStrategy = 'NO_LOCKING' | 'TWO_PHASE_LOCKING' | 'OPTIMISTIC_OCC';
 
-export type TxStep = 'INIT' | 'READ_DATA' | 'ACQUIRE_LOCK' | 'VALIDATE' | 'WRITE_DATA' | 'COMMIT' | 'ABORT';
-
 export interface SimulatedTx {
   txId: string;
-  clientIndex: number;
+  clientId: string;
   clientName: string;
-  regNumber: string;
-  status: 'PENDING' | 'RUNNING' | 'LOCKED' | 'COMMITTED' | 'REJECTED' | 'ROLLEDBACK';
-  currentStep: TxStep;
-  startTs: number;
-  finishTs?: number;
+  status: 'PENDING' | 'ACQUIRING_LOCK' | 'COMMITTED' | 'REJECTED' | 'DEADLOCK';
+  currentStep: string;
+  timestamp: number;
   latencyMs: number;
-  seatAllocated?: string;
-  message: string;
-  sqlStatements: string[];
-  lockAcquired?: boolean;
-  versionRead?: number;
+  seatClaimed?: string;
+  message?: string;
 }
 
 export interface ConcurrencyRunResult {
   runId: string;
-  timestamp: number;
   strategy: ConcurrencyStrategy;
-  concurrencyLevel: number;
+  targetEventId: string;
   targetEventTitle: string;
-  targetSeatLabel: string;
-  initialStock: number;
-  finalStock: number;
+  concurrencyLevel: number;
   successfulCount: number;
   rejectedCount: number;
+  deadlockCount: number;
+  initialStock: number;
+  finalStock: number;
+  durationMs: number;
   overbookingDetected: boolean;
   overbookedSeats: number;
-  durationMs: number;
   transactions: SimulatedTx[];
   dbLogs: string[];
+}
+
+export interface SideBySideRunResult {
+  noLockResult: ConcurrencyRunResult;
+  twoPlResult: ConcurrencyRunResult;
 }
 
 export interface AuditLog {
   id: string;
   timestamp: number;
   action:
-    | 'BOOKING_ATTEMPT'
-    | 'LOCK_ACQUIRED'
-    | 'LOCK_EXPIRED'
-    | 'BOOKING_COMMITTED'
+    | 'LOCK_GRANTED'
+    | 'LOCK_RELEASED'
     | 'LOCK_REJECTED'
-    | 'RACE_OVERBOOK'
+    | 'LOCK_EXPIRED'
+    | 'BOOKING_CONFIRMED'
     | 'TICKET_CANCELLED'
-    | 'TICKET_VERIFIED'
+    | 'TICKET_VERIFY_VALID'
     | 'TICKET_VERIFY_DUPLICATE'
-    | 'TICKET_VERIFY_INVALID';
+    | 'TICKET_VERIFY_EXPIRED'
+    | 'TICKET_VERIFY_INVALID'
+    | 'RACE_OVERBOOK'
+    | 'SIMULATION_RUN'
+    | 'BENCHMARK_SIDE_BY_SIDE'
+    | 'DATABASE_RESET';
   eventId: string;
   eventTitle: string;
-  seatLabel: string;
+  seatLabel?: string;
   userName: string;
   regNumber: string;
-  status: 'SUCCESS' | 'CONFLICT' | 'ANOMALY_OVERBOOK' | 'RELEASED' | 'VERIFIED' | 'DUPLICATE_FLAGGED' | 'INVALID';
+  status: 'SUCCESS' | 'CONFLICT' | 'REJECTED' | 'INVALID' | 'RELEASED' | 'DUPLICATE' | 'EXPIRED';
   details: string;
   protocol?: string;
 }
-
