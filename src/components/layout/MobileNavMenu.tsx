@@ -38,6 +38,7 @@ export const MobileNavMenu: React.FC<MobileNavMenuProps> = ({
             <>
               <NavLink to="/verify" onClick={onClose} className="block py-2 text-white">Gate Scanner</NavLink>
               <NavLink to="/verify/history" onClick={onClose} className="block py-2 text-white">Scan Log</NavLink>
+              <NavLink to="/verify/demo-qr" onClick={onClose} className="block py-2 text-white">Demo QR Codes</NavLink>
             </>
           )}
           {role === 'admin' && (

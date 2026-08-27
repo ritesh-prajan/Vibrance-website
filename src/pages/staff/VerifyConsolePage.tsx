@@ -4,8 +4,9 @@ import { ScanRecord } from '../../types';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
-import { ShieldCheck, Search, CheckCircle2, AlertTriangle, XCircle, Clock, History, QrCode, Sparkles } from 'lucide-react';
+import { ShieldCheck, Search, CheckCircle2, AlertTriangle, XCircle, Clock, History, QrCode, Sparkles, Camera } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { QrScanner } from '../../components/QrScanner';
 
 export const VerifyConsolePage: React.FC = () => {
   const { currentUser, verifyTicket, scanHistory } = useFest();
@@ -15,6 +16,7 @@ export const VerifyConsolePage: React.FC = () => {
   const [scanQuery, setScanQuery] = useState('');
   const [lastScanResult, setLastScanResult] = useState<ScanRecord | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [showQrScanner, setShowQrScanner] = useState(false);
 
   const staff = { name: currentUser?.name || 'Officer Rajesh Menon', staffId: currentUser?.regNumber || 'STF-GATE-04' };
 
@@ -38,6 +40,17 @@ export const VerifyConsolePage: React.FC = () => {
 
   return (
     <div className="space-y-8">
+      {/* QR Camera Scanner Modal */}
+      {showQrScanner && (
+        <QrScanner
+          onScan={(payload) => {
+            setShowQrScanner(false);
+            handleScan(payload);
+          }}
+          onClose={() => setShowQrScanner(false)}
+        />
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -47,27 +60,53 @@ export const VerifyConsolePage: React.FC = () => {
           </div>
           <h1 className="text-2xl sm:text-4xl font-black text-white font-display tracking-wide mt-1">TICKET SCANNER &amp; ACCESS CONTROL</h1>
         </div>
-        <div className="bg-[#4C3549] border border-white/15 rounded-2xl p-3.5 flex items-center gap-3 text-xs font-mono">
-          <div className="w-8 h-8 rounded-xl bg-[#DF367C] text-white flex items-center justify-center font-bold">
-            <ShieldCheck className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="text-white font-bold">{staff.name}</div>
-            <div className="text-[#FF7099] text-[10px]">{staff.staffId} &bull; Active Post</div>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/verify/demo-qr"
+            className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-mono transition-colors flex items-center gap-1.5 border border-white/10"
+          >
+            <QrCode className="w-3.5 h-3.5 text-[#FF7099]" />
+            <span>View Demo QR Codes</span>
+          </Link>
+          <div className="bg-[#4C3549] border border-white/15 rounded-2xl p-3.5 flex items-center gap-3 text-xs font-mono">
+            <div className="w-8 h-8 rounded-xl bg-[#DF367C] text-white flex items-center justify-center font-bold">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-white font-bold">{staff.name}</div>
+              <div className="text-[#FF7099] text-[10px]">{staff.staffId} &bull; Active Post</div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Scanner Input */}
       <div className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+        {/* Camera Scan Button */}
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          type="button"
+          onClick={() => setShowQrScanner(true)}
+          className="w-full py-5 rounded-2xl bg-gradient-to-r from-[#FF3E41] to-[#DF367C] text-white font-bold font-mono text-sm flex items-center justify-center gap-3 shadow-lg hover:opacity-90 transition-opacity cursor-pointer"
+        >
+          <Camera className="w-6 h-6" />
+          <span>Scan QR Code with Camera</span>
+        </motion.button>
+
+        <div className="flex items-center gap-3 text-xs font-mono text-white/30">
+          <div className="flex-1 h-px bg-white/10" />
+          <span>or enter ticket code manually</span>
+          <div className="flex-1 h-px bg-white/10" />
+        </div>
+
         <form onSubmit={(e) => { e.preventDefault(); handleScan(); }} className="space-y-4">
-          <label className="block text-xs font-mono font-bold text-white/80 uppercase tracking-wider">Scan / Enter Booking Reference Code or QR Payload:</label>
+          <label className="block text-xs font-mono font-bold text-white/80 uppercase tracking-wider">Booking Reference Code or QR Payload:</label>
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <QrCode className="w-5 h-5 text-white/40 absolute left-4 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="e.g. VIB26-ARMAAN-A1 or VIB26-HACK-EXPIRED"
+                placeholder="e.g. VIB26-ARMAAN-A1 or full QR payload"
                 value={scanQuery}
                 onChange={(e) => setScanQuery(e.target.value)}
                 className="w-full bg-[#2A1D26] border border-white/20 rounded-2xl pl-12 pr-4 py-3.5 text-sm text-white font-mono placeholder-white/40 focus:outline-none focus:border-[#DF367C]"

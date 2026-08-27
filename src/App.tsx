@@ -24,6 +24,7 @@ import { ProfilePage } from './pages/student/ProfilePage';
 // Gate Staff Pages
 import { VerifyConsolePage } from './pages/staff/VerifyConsolePage';
 import { VerifyHistoryPage } from './pages/staff/VerifyHistoryPage';
+import { DemoQrCodesPage } from './pages/staff/DemoQrCodesPage';
 
 // Admin Pages
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
@@ -149,6 +150,16 @@ export const AppRoutes: React.FC = () => {
           <RequireAuth allowedRoles={['gate_staff']}>
             <AppLayout>
               <VerifyHistoryPage />
+            </AppLayout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/verify/demo-qr"
+        element={
+          <RequireAuth allowedRoles={['gate_staff', 'admin']}>
+            <AppLayout>
+              <DemoQrCodesPage />
             </AppLayout>
           </RequireAuth>
         }

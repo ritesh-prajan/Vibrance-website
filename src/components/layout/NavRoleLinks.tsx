@@ -37,6 +37,9 @@ export const NavRoleLinks: React.FC<NavRoleLinksProps> = ({ role }) => {
         <NavLink to="/verify/history" className={({ isActive }) => linkClass(isActive, 'bg-[#DF367C]')}>
           Scan Log
         </NavLink>
+        <NavLink to="/verify/demo-qr" className={({ isActive }) => linkClass(isActive, 'bg-[#DF367C]')}>
+          Demo QR Codes
+        </NavLink>
       </nav>
     );
   }
