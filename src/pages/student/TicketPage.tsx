@@ -111,7 +111,14 @@ export const TicketPage: React.FC = () => {
         initial={{ opacity: 0, scale: 0.95, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.35, ease: 'easeOut' }}
-        className={`border rounded-3xl p-6 sm:p-10 shadow-2xl space-y-6 ticket-notch-left ticket-notch-right ${
+        style={{
+          backgroundImage: booking.ticketBgImage
+            ? `linear-gradient(to bottom, rgba(20, 10, 18, 0.85), rgba(30, 15, 26, 0.95)), url(${booking.ticketBgImage})`
+            : undefined,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+        className={`border rounded-3xl p-6 sm:p-10 shadow-2xl space-y-6 ticket-notch-left ticket-notch-right relative overflow-hidden ${
           isExpired ? 'bg-[#2a1d26] border-white/10 opacity-75' : 'bg-[#4C3549] border-white/15'
         }`}
       >

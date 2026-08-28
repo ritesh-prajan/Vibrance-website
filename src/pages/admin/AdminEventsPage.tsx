@@ -5,14 +5,44 @@ import {
   Plus,
   Edit2,
   Trash2,
-  Clock,
   RotateCcw,
   Search,
   AlertTriangle,
   X,
-  Radio,
-  Calendar,
+  Eye,
+  Image as ImageIcon,
+  Upload,
+  Check,
+  Sparkles,
 } from 'lucide-react';
+import { EventDetailsModal } from '../../components/events/EventDetailsModal';
+
+const TICKET_BG_PRESETS = [
+  {
+    name: 'Concert Stage',
+    url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1000&auto=format&fit=crop&q=80',
+  },
+  {
+    name: 'EDM Lasers',
+    url: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1000&auto=format&fit=crop&q=80',
+  },
+  {
+    name: 'Dance Arena',
+    url: 'https://images.unsplash.com/photo-1547153760-18fc86324498?w=1000&auto=format&fit=crop&q=80',
+  },
+  {
+    name: 'Comedy Spotlight',
+    url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1000&auto=format&fit=crop&q=80',
+  },
+  {
+    name: 'Rock Band',
+    url: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=1000&auto=format&fit=crop&q=80',
+  },
+  {
+    name: 'Tech Matrix',
+    url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1000&auto=format&fit=crop&q=80',
+  },
+];
 
 export const AdminEventsPage: React.FC = () => {
   const { events, addEvent, updateEvent, deleteEvent, resetDatabaseState } = useFest();
@@ -20,6 +50,7 @@ export const AdminEventsPage: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<FestEvent | null>(null);
   const [deletingEvent, setDeletingEvent] = useState<FestEvent | null>(null);
+  const [previewingEvent, setPreviewingEvent] = useState<FestEvent | null>(null);
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,6 +67,7 @@ export const AdminEventsPage: React.FC = () => {
   const [totalSeats, setTotalSeats] = useState(48);
   const [shortDesc, setShortDesc] = useState('');
   const [tag, setTag] = useState('');
+  const [ticketBgImage, setTicketBgImage] = useState('');
 
   const filteredEvents = useMemo(() => {
     return events.filter((e) => {
@@ -47,6 +79,19 @@ export const AdminEventsPage: React.FC = () => {
       return matchesSearch && matchesCategory;
     });
   }, [events, searchQuery, selectedCategory]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setTicketBgImage(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleCreateEvent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +108,7 @@ export const AdminEventsPage: React.FC = () => {
       totalSeats: Number(totalSeats) || 48,
       tag: tag.trim() || 'NEWLY ADDED PASS',
       shortDesc: shortDesc.trim() || 'Exclusive festival stage event added by administrator.',
+      ticketBgImage: ticketBgImage.trim() || undefined,
     });
 
     setIsCreateModalOpen(false);
@@ -84,6 +130,7 @@ export const AdminEventsPage: React.FC = () => {
       time: time.trim() || editingEvent.time,
       tag: tag.trim() || editingEvent.tag,
       shortDesc: shortDesc.trim() || editingEvent.shortDesc,
+      ticketBgImage: ticketBgImage.trim() || undefined,
     });
 
     setEditingEvent(null);
@@ -107,6 +154,7 @@ export const AdminEventsPage: React.FC = () => {
     setTime(e.time);
     setTag(e.tag || '');
     setShortDesc(e.shortDesc || '');
+    setTicketBgImage(e.ticketBgImage || '');
   };
 
   const resetForm = () => {
@@ -120,10 +168,19 @@ export const AdminEventsPage: React.FC = () => {
     setTotalSeats(48);
     setShortDesc('');
     setTag('');
+    setTicketBgImage('');
   };
 
   return (
     <div className="space-y-8 font-mono">
+      {/* Event Details & Live Ticket Pass Preview Modal */}
+      <EventDetailsModal
+        event={previewingEvent}
+        isOpen={!!previewingEvent}
+        onClose={() => setPreviewingEvent(null)}
+        onSelectSeats={() => setPreviewingEvent(null)}
+      />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -197,7 +254,7 @@ export const AdminEventsPage: React.FC = () => {
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-white/10 text-white/40 text-[10px] uppercase">
-              <th className="pb-3 pr-4">Event Details</th>
+              <th className="pb-3 pr-4">Event Details &amp; Ticket Style</th>
               <th className="pb-3 px-4">Category</th>
               <th className="pb-3 px-4">Base Price</th>
               <th className="pb-3 px-4">Capacity Breakdown</th>
@@ -209,13 +266,34 @@ export const AdminEventsPage: React.FC = () => {
             {filteredEvents.map((e) => (
               <tr key={e.id} className="hover:bg-white/5 transition-colors">
                 <td className="py-4 pr-4">
-                  <div className="font-bold text-white text-sm">{e.title}</div>
-                  <div className="text-[11px] text-[#FF7099]">{e.artistOrHost}</div>
-                  {e.tag && (
-                    <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-white/60">
-                      {e.tag}
-                    </span>
-                  )}
+                  <div
+                    onClick={() => setPreviewingEvent(e)}
+                    className="cursor-pointer group flex items-start gap-3"
+                  >
+                    {e.ticketBgImage ? (
+                      <img
+                        src={e.ticketBgImage}
+                        alt=""
+                        className="w-10 h-10 rounded-xl object-cover border border-white/20 shrink-0 mt-0.5 shadow"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-xl bg-[#2A1D26] border border-white/15 flex items-center justify-center shrink-0 mt-0.5 text-white/40">
+                        <ImageIcon className="w-4 h-4" />
+                      </div>
+                    )}
+                    <div>
+                      <div className="font-bold text-white text-sm group-hover:text-[#FF7099] transition-colors flex items-center gap-1.5">
+                        <span>{e.title}</span>
+                        <Eye className="w-3.5 h-3.5 text-white/30 group-hover:text-[#FF7099] transition-colors" />
+                      </div>
+                      <div className="text-[11px] text-[#FF7099]">{e.artistOrHost}</div>
+                      {e.tag && (
+                        <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-white/60">
+                          {e.tag}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </td>
                 <td className="py-4 px-4 text-white/70">
                   <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] uppercase">
@@ -240,6 +318,13 @@ export const AdminEventsPage: React.FC = () => {
                 </td>
                 <td className="py-4 pl-4 text-right">
                   <div className="flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => setPreviewingEvent(e)}
+                      className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                      title="Inspect Event & Ticket Preview"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
                     <button
                       onClick={() => openEdit(e)}
                       className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
@@ -271,11 +356,16 @@ export const AdminEventsPage: React.FC = () => {
       {/* Create Event Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-[#4C3549] border border-white/20 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5 my-8">
+          <div className="bg-[#4C3549] border border-white/20 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-5 my-8">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-white font-display">
-                CREATE FESTIVAL STAGE EVENT
-              </h3>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded bg-[#DF367C]/30 text-[#FF7099] text-[10px] font-bold">
+                  NEW STAGE
+                </span>
+                <h3 className="text-xl font-bold text-white font-display">
+                  CREATE FESTIVAL STAGE EVENT
+                </h3>
+              </div>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
                 className="text-white/40 hover:text-white"
@@ -394,6 +484,89 @@ export const AdminEventsPage: React.FC = () => {
                 />
               </div>
 
+              {/* ── PHOTO BACKGROUND FOR TICKET PASS ── */}
+              <div className="p-4 bg-[#2A1D26] rounded-2xl border border-white/15 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-white/90 font-bold flex items-center gap-1.5">
+                    <ImageIcon className="w-4 h-4 text-[#FF7099]" />
+                    <span>Ticket Background Photo</span>
+                  </label>
+                  {ticketBgImage && (
+                    <button
+                      type="button"
+                      onClick={() => setTicketBgImage('')}
+                      className="text-[10px] text-red-400 hover:underline"
+                    >
+                      Clear Image
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    placeholder="Paste image URL (e.g. https://...)"
+                    value={ticketBgImage}
+                    onChange={(e) => setTicketBgImage(e.target.value)}
+                    className="flex-1 bg-[#1A1218] border border-white/15 rounded-xl px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:border-[#DF367C]"
+                  />
+                  <label className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 cursor-pointer shrink-0 transition-colors">
+                    <Upload className="w-3.5 h-3.5 text-[#FF7099]" />
+                    <span>Upload</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* Presets */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] text-white/50">Or choose vibrant stage preset:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {TICKET_BG_PRESETS.map((preset) => (
+                      <button
+                        key={preset.name}
+                        type="button"
+                        onClick={() => setTicketBgImage(preset.url)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] border transition-all flex items-center gap-1 cursor-pointer ${
+                          ticketBgImage === preset.url
+                            ? 'bg-[#DF367C] border-[#FF7099] text-white font-bold'
+                            : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10'
+                        }`}
+                      >
+                        {ticketBgImage === preset.url && <Check className="w-3 h-3" />}
+                        <span>{preset.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mini Ticket Preview */}
+                {ticketBgImage && (
+                  <div className="pt-2">
+                    <span className="text-[10px] text-white/40 block mb-1">Ticket Live Preview:</span>
+                    <div
+                      className="rounded-2xl p-3.5 border border-white/20 shadow-md text-white ticket-notch-left ticket-notch-right"
+                      style={{
+                        backgroundImage: `linear-gradient(to bottom, rgba(20, 10, 18, 0.82), rgba(30, 15, 26, 0.94)), url(${ticketBgImage})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                      }}
+                    >
+                      <div className="flex items-center justify-between text-[10px] font-bold border-b border-white/15 pb-1.5">
+                        <span className="text-[#FF7099]">VIBRANCE 2026 PASS</span>
+                        <span className="text-emerald-300">₹{basePrice || 499}</span>
+                      </div>
+                      <div className="pt-1.5 text-xs font-black truncate">{title || 'STAGE EVENT TITLE'}</div>
+                      <div className="text-[10px] text-white/60 truncate">{artist || 'Artist Name'} &bull; {venue}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-white/70 mb-1">Description</label>
                 <textarea
@@ -428,11 +601,16 @@ export const AdminEventsPage: React.FC = () => {
       {/* Edit Event Modal */}
       {editingEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-[#4C3549] border border-white/20 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5 my-8">
+          <div className="bg-[#4C3549] border border-white/20 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-5 my-8">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-white font-display">
-                EDIT EVENT: {editingEvent.title}
-              </h3>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded bg-[#FF7099]/20 text-[#FF7099] text-[10px] font-bold">
+                  EDIT
+                </span>
+                <h3 className="text-xl font-bold text-white font-display">
+                  EDIT EVENT: {editingEvent.title}
+                </h3>
+              </div>
               <button
                 onClick={() => setEditingEvent(null)}
                 className="text-white/40 hover:text-white"
@@ -535,6 +713,89 @@ export const AdminEventsPage: React.FC = () => {
                 />
               </div>
 
+              {/* ── PHOTO BACKGROUND FOR TICKET PASS (EDIT) ── */}
+              <div className="p-4 bg-[#2A1D26] rounded-2xl border border-white/15 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-white/90 font-bold flex items-center gap-1.5">
+                    <ImageIcon className="w-4 h-4 text-[#FF7099]" />
+                    <span>Ticket Background Photo</span>
+                  </label>
+                  {ticketBgImage && (
+                    <button
+                      type="button"
+                      onClick={() => setTicketBgImage('')}
+                      className="text-[10px] text-red-400 hover:underline"
+                    >
+                      Clear Image
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    placeholder="Paste image URL (e.g. https://...)"
+                    value={ticketBgImage}
+                    onChange={(e) => setTicketBgImage(e.target.value)}
+                    className="flex-1 bg-[#1A1218] border border-white/15 rounded-xl px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:border-[#DF367C]"
+                  />
+                  <label className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 cursor-pointer shrink-0 transition-colors">
+                    <Upload className="w-3.5 h-3.5 text-[#FF7099]" />
+                    <span>Upload</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* Presets */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] text-white/50">Or choose vibrant stage preset:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {TICKET_BG_PRESETS.map((preset) => (
+                      <button
+                        key={preset.name}
+                        type="button"
+                        onClick={() => setTicketBgImage(preset.url)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] border transition-all flex items-center gap-1 cursor-pointer ${
+                          ticketBgImage === preset.url
+                            ? 'bg-[#DF367C] border-[#FF7099] text-white font-bold'
+                            : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10'
+                        }`}
+                      >
+                        {ticketBgImage === preset.url && <Check className="w-3 h-3" />}
+                        <span>{preset.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mini Ticket Preview */}
+                {ticketBgImage && (
+                  <div className="pt-2">
+                    <span className="text-[10px] text-white/40 block mb-1">Ticket Live Preview:</span>
+                    <div
+                      className="rounded-2xl p-3.5 border border-white/20 shadow-md text-white ticket-notch-left ticket-notch-right"
+                      style={{
+                        backgroundImage: `linear-gradient(to bottom, rgba(20, 10, 18, 0.82), rgba(30, 15, 26, 0.94)), url(${ticketBgImage})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                      }}
+                    >
+                      <div className="flex items-center justify-between text-[10px] font-bold border-b border-white/15 pb-1.5">
+                        <span className="text-[#FF7099]">VIBRANCE 2026 PASS</span>
+                        <span className="text-emerald-300">₹{basePrice || 499}</span>
+                      </div>
+                      <div className="pt-1.5 text-xs font-black truncate">{title || 'STAGE EVENT TITLE'}</div>
+                      <div className="text-[10px] text-white/60 truncate">{artist || 'Artist Name'} &bull; {venue}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-white/70 mb-1">Description</label>
                 <textarea
@@ -610,4 +871,3 @@ export const AdminEventsPage: React.FC = () => {
     </div>
   );
 };
-

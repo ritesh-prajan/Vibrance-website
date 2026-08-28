@@ -65,6 +65,7 @@ interface FestContextType {
     basePrice: number;
     tag?: string;
     shortDesc?: string;
+    ticketBgImage?: string;
     totalSeats?: number;
     startOffsetHours?: number;
   }) => FestEvent;
@@ -318,6 +319,7 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
     basePrice: number;
     tag?: string;
     shortDesc?: string;
+    ticketBgImage?: string;
     totalSeats?: number;
     startOffsetHours?: number;
   }): FestEvent => {
@@ -341,6 +343,7 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       bookedSeatsCount: 0,
       tag: eventData.tag || 'NEWLY ADDED EVENT',
       shortDesc: eventData.shortDesc || 'Newly created festival event stage.',
+      ticketBgImage: eventData.ticketBgImage,
       seats,
       startTimestamp: now + startOffset,
       endTimestamp: now + startOffset + 3 * 3600 * 1000,
@@ -555,6 +558,7 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       paymentMethod: details.paymentMethod,
       bookedAt: Date.now(),
       qrPayload: `VIBRANCE26-TICKET-${bookingRef}-${activeSeat.id}-${details.regNumber}`,
+      ticketBgImage: event.ticketBgImage,
       status: 'confirmed',
       startTimestamp: timing.startTimestamp,
       endTimestamp: timing.endTimestamp,

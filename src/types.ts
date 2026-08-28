@@ -58,6 +58,7 @@ export interface FestEvent {
   accentColor?: string;
   tag: string;
   shortDesc: string;
+  ticketBgImage?: string;
   seats: Seat[];
   startTimestamp?: number;
   endTimestamp?: number;
@@ -83,6 +84,7 @@ export interface Booking {
   paymentMethod: 'UPI' | 'CAMPUS_CARD' | 'NET_BANKING';
   bookedAt: number;
   qrPayload: string;
+  ticketBgImage?: string;
   status: 'confirmed' | 'cancelled' | 'checked_in';
   checkedInAt?: number;
   checkedInBy?: {

@@ -18,7 +18,14 @@ export const IntactTicketCard: React.FC<IntactTicketCardProps> = ({ booking, onC
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`border rounded-3xl p-5 sm:p-6 transition-all shadow-xl space-y-4 ticket-notch-left ticket-notch-right ${
+      style={{
+        backgroundImage: booking.ticketBgImage
+          ? `linear-gradient(to bottom, rgba(25, 12, 23, 0.85), rgba(35, 18, 30, 0.95)), url(${booking.ticketBgImage})`
+          : undefined,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+      className={`border rounded-3xl p-5 sm:p-6 transition-all shadow-xl space-y-4 ticket-notch-left ticket-notch-right relative overflow-hidden ${
         timing.isLive
           ? 'bg-[#4C3549] border-red-500/60 shadow-[0_10px_30px_rgba(255,62,65,0.2)]'
           : 'bg-[#4C3549] border-white/15 hover:border-white/30'

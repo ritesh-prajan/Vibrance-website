@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FestEvent } from '../types';
 import { getEventTiming } from '../utils/timeUtils';
-import { Calendar, MapPin, Ticket, Flame, Clock, Users, ArrowRight, Zap, CheckCircle2 } from 'lucide-react';
+import { Calendar, MapPin, Ticket, Flame, Clock, Users, ArrowRight, Zap, CheckCircle2, Eye } from 'lucide-react';
+import { EventDetailsModal } from './events/EventDetailsModal';
 
 interface EventCardProps {
   event: FestEvent;
@@ -10,23 +11,35 @@ interface EventCardProps {
 }
 
 export const EventCard: React.FC<EventCardProps> = ({ event, onSelectSeats }) => {
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const timing = getEventTiming(event);
   const isUrgent = event.availableSeats <= 4 && !timing.isExpired;
   const isSoldOut = event.availableSeats === 0 || timing.isExpired;
 
   return (
-    <motion.div
-      whileHover={!timing.isExpired ? { y: -4, boxShadow: `0 20px 60px ${event.accentColor ?? '#FF3E41'}22` } : {}}
-      transition={{ duration: 0.2, ease: 'easeOut' }}
-      className={`relative group border rounded-2xl overflow-hidden flex flex-col justify-between shadow-lg transition-all ${
-        timing.isExpired
-          ? 'bg-[#1e151c] border-white/5 opacity-60'
-          : timing.isLive
-          ? 'bg-[#0e121a] border-red-500/40 hover:border-red-500 shadow-[0_0_25px_rgba(255,62,65,0.15)]'
-          : 'bg-[#0e121a] hover:bg-[#131822] border-white/10 hover:border-white/25'
-      }`}
-    >
-      <div className="p-5 pb-3">
+    <>
+      <EventDetailsModal
+        event={event}
+        isOpen={isDetailsOpen}
+        onClose={() => setIsDetailsOpen(false)}
+        onSelectSeats={onSelectSeats}
+      />
+
+      <motion.div
+        whileHover={!timing.isExpired ? { y: -4, boxShadow: `0 20px 60px ${event.accentColor ?? '#FF3E41'}22` } : {}}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+        className={`relative group border rounded-2xl overflow-hidden flex flex-col justify-between shadow-lg transition-all ${
+          timing.isExpired
+            ? 'bg-[#1e151c] border-white/5 opacity-60'
+            : timing.isLive
+            ? 'bg-[#0e121a] border-red-500/40 hover:border-red-500 shadow-[0_0_25px_rgba(255,62,65,0.15)]'
+            : 'bg-[#0e121a] hover:bg-[#131822] border-white/10 hover:border-white/25'
+        }`}
+      >
+      <div
+        onClick={() => setIsDetailsOpen(true)}
+        className="p-5 pb-3 cursor-pointer group/header"
+      >
         <div className="flex items-center justify-between gap-2 mb-3">
           <span
             className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-md"
@@ -71,8 +84,9 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onSelectSeats }) =>
           )}
         </div>
 
-        <h3 className={`text-lg font-bold tracking-tight leading-snug transition-colors ${timing.isExpired ? 'text-white/60' : 'text-white group-hover:text-[#FF7099]'}`}>
-          {event.title}
+        <h3 className={`text-lg font-bold tracking-tight leading-snug transition-colors flex items-center justify-between gap-2 ${timing.isExpired ? 'text-white/60' : 'text-white group-hover/header:text-[#FF7099]'}`}>
+          <span>{event.title}</span>
+          <Eye className="w-4 h-4 text-white/30 group-hover/header:text-[#FF7099] shrink-0 transition-colors" />
         </h3>
         <p className="text-xs text-white/70 mt-1 font-medium flex items-center gap-1.5">
           <Users className="w-3.5 h-3.5 text-white/40" />{event.artistOrHost}
@@ -127,29 +141,40 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onSelectSeats }) =>
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-1">
+        <div className="flex items-center justify-between pt-1 gap-2">
           <div>
             <p className="text-[10px] text-white/40 font-mono uppercase">Ticket Pass</p>
             <p className="text-lg font-bold text-white font-mono">&#8377;{event.basePrice}</p>
           </div>
-          <motion.button
-            whileTap={!isSoldOut ? { scale: 0.96 } : {}}
-            onClick={() => onSelectSeats(event)}
-            disabled={isSoldOut}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-1.5 shadow-md ${
-              timing.isExpired
-                ? 'bg-white/10 text-white/40 cursor-not-allowed'
-                : event.availableSeats === 0
-                ? 'bg-white/10 text-white/40 cursor-not-allowed'
-                : 'bg-[#FF3E41] hover:bg-[#e03235] text-white shadow-[0_0_15px_rgba(255,62,65,0.25)] cursor-pointer'
-            }`}
-          >
-            <Ticket className="w-3.5 h-3.5" />
-            <span>{timing.isExpired ? 'Event Concluded' : event.availableSeats === 0 ? 'Sold Out' : 'Select Seat'}</span>
-            {!isSoldOut && <ArrowRight className="w-3 h-3 ml-0.5" />}
-          </motion.button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsDetailsOpen(true)}
+              className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-mono transition-colors cursor-pointer"
+              title="Preview Ticket & Details"
+            >
+              <Eye className="w-4 h-4 text-white/80" />
+            </button>
+            <motion.button
+              whileTap={!isSoldOut ? { scale: 0.96 } : {}}
+              onClick={() => onSelectSeats(event)}
+              disabled={isSoldOut}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-1.5 shadow-md ${
+                timing.isExpired
+                  ? 'bg-white/10 text-white/40 cursor-not-allowed'
+                  : event.availableSeats === 0
+                  ? 'bg-white/10 text-white/40 cursor-not-allowed'
+                  : 'bg-[#FF3E41] hover:bg-[#e03235] text-white shadow-[0_0_15px_rgba(255,62,65,0.25)] cursor-pointer'
+              }`}
+            >
+              <Ticket className="w-3.5 h-3.5" />
+              <span>{timing.isExpired ? 'Concluded' : event.availableSeats === 0 ? 'Sold Out' : 'Select Seat'}</span>
+              {!isSoldOut && <ArrowRight className="w-3 h-3 ml-0.5" />}
+            </motion.button>
+          </div>
         </div>
       </div>
     </motion.div>
+    </>
   );
 };
