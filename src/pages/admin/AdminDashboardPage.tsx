@@ -63,26 +63,62 @@ export const AdminDashboardPage: React.FC = () => {
       </div>
 
       {/* Quick Action Navigation Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { to: '/admin/concurrency-lab', icon: <Cpu className="w-5 h-5" />, iconBg: '#DF367C', title: 'CONCURRENCY SIMULATOR', desc: 'Benchmark database isolation strategies (No Locking vs Strict 2PL vs OCC) with live side-by-side transaction execution.' },
-          { to: '/admin/events', icon: <Calendar className="w-5 h-5" />, iconBg: '#883955', title: 'EVENT & STAGE INVENTORY', desc: 'Create new stages, edit pricing tiers, adjust total capacity, and delete events with live ACID logging.' },
-          { to: '/admin/users', icon: <ShieldCheck className="w-5 h-5" />, iconBg: '#10B981', title: 'STAFF & USER PROVISIONING', desc: 'Provision gate security personnel, assign scanner badge IDs, manage student profiles, and test login.' },
-          { to: '/admin/audit-logs', icon: <Activity className="w-5 h-5" />, iconBg: '#FF3E41', title: 'SYSTEM AUDIT & LOGS', desc: 'Inspect all ACID commits, lock grants, timeout expirations, overbooking anomalies, and gate verification logs.' },
-        ].map(({ to, icon, iconBg, title, desc }, i) => (
+          {
+            to: '/admin/concurrency-lab',
+            tag: 'SIMULATION LAB',
+            icon: <Cpu className="w-4 h-4" />,
+            color: '#DF367C',
+            title: 'Concurrency Lab',
+            sub: 'Benchmark 2PL vs No Locking',
+          },
+          {
+            to: '/admin/events',
+            tag: 'INVENTORY',
+            icon: <Calendar className="w-4 h-4" />,
+            color: '#FF7099',
+            title: 'Stage Events & Seats',
+            sub: 'Manage capacity & pricing tiers',
+          },
+          {
+            to: '/admin/users',
+            tag: 'ACCESS CONTROL',
+            icon: <ShieldCheck className="w-4 h-4" />,
+            color: '#10B981',
+            title: 'Staff & Attendees',
+            sub: 'Provision gate security & IDs',
+          },
+          {
+            to: '/admin/audit-logs',
+            tag: 'TRANSACTIONS',
+            icon: <Activity className="w-4 h-4" />,
+            color: '#FF3E41',
+            title: 'System Audit Logs',
+            sub: 'ACID telemetry & check-in trail',
+          },
+        ].map(({ to, tag, icon, color, title, sub }, i) => (
           <motion.div
             key={to}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.35 + i * 0.07 }}
           >
-            <Link to={to} className="block bg-gradient-to-br from-[#4C3549] to-[#883955] border border-white/15 rounded-3xl p-6 hover:border-white/30 transition-all shadow-xl space-y-3 group">
-              <div className="w-10 h-10 rounded-xl text-white flex items-center justify-center font-bold shadow-md" style={{ backgroundColor: iconBg }}>{icon}</div>
-              <h3 className="text-xl font-bold text-white font-display flex items-center justify-between">
-                <span>{title}</span>
-                <ArrowRight className="w-4 h-4 text-white/50 group-hover:translate-x-1 transition-transform" />
-              </h3>
-              <p className="text-xs text-white/70 leading-relaxed">{desc}</p>
+            <Link
+              to={to}
+              className="bg-[#4C3549] border border-white/15 rounded-2xl p-5 space-y-2 shadow-lg hover:border-white/30 hover:bg-[#553c52] transition-all group block"
+            >
+              <div className="flex items-center justify-between text-white/40 text-[10px] uppercase font-mono">
+                <span>{tag}</span>
+                <div className="flex items-center gap-1.5" style={{ color }}>
+                  {icon}
+                  <ArrowRight className="w-3.5 h-3.5 text-white/30 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                </div>
+              </div>
+              <div className="text-lg font-black font-display tracking-wide text-white group-hover:text-[#FF7099] transition-colors truncate">
+                {title}
+              </div>
+              <div className="text-[11px] text-white/50 font-mono truncate">{sub}</div>
             </Link>
           </motion.div>
         ))}
