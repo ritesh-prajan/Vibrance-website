@@ -37,7 +37,7 @@ const RootRedirect: React.FC = () => {
   const { currentUser } = useFest();
 
   if (!currentUser) {
-    return <LandingPage />;
+    return <LoginPage />;
   }
 
   if (currentUser.role === 'admin') {

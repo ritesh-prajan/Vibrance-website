@@ -114,17 +114,7 @@ interface FestContextType {
 const FestContext = createContext<FestContextType | undefined>(undefined);
 
 export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.USER);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return MOCK_STUDENT_PROFILES[0];
-      }
-    }
-    return MOCK_STUDENT_PROFILES[0];
-  });
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
 
   const [users, setUsers] = useState<UserProfile[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.USERS);
