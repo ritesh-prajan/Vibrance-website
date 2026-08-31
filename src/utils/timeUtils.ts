@@ -21,12 +21,13 @@ const HOUR = 3600000;
 const DAY = 86400000;
 
 export const EVENT_SCHEDULE_OFFSETS: Record<string, { startOffset: number; durationHours: number }> = {
-  'evt-hack': { startOffset: -28 * HOUR, durationHours: 24 },
-  'evt-band': { startOffset: -5 * HOUR, durationHours: 4 },
-  'evt-dance': { startOffset: -45 * 60000, durationHours: 3 },
-  'evt-armaan': { startOffset: 105 * 60000, durationHours: 3.5 },
-  'evt-comedy': { startOffset: 26 * HOUR, durationHours: 2 },
-  'evt-edm': { startOffset: 52 * HOUR, durationHours: 4 },
+  'evt-hack': { startOffset: -52 * HOUR, durationHours: 24 }, // Sat Aug 29 (Concluded)
+  'evt-band': { startOffset: -28 * HOUR, durationHours: 4 }, // Sun Aug 30 (Concluded)
+  'evt-dance': { startOffset: -45 * 60000, durationHours: 3 }, // Mon Aug 31 (Live Stage)
+  'evt-armaan': { startOffset: 105 * 60000, durationHours: 3.5 }, // Mon Aug 31 (Tonight Pro-Show)
+  'evt-comedy': { startOffset: 24 * HOUR, durationHours: 2 }, // Tue Sep 1 (Upcoming Tomorrow)
+  'evt-edm': { startOffset: 72 * HOUR, durationHours: 4 }, // Thu Sep 3 (Upcoming)
+  'evt-cyberquest': { startOffset: 116 * HOUR, durationHours: 24 }, // Sat Sep 5 (Upcoming Grand Finale)
 };
 
 export function getEventTiming(event: FestEvent | Booking | { id?: string; eventId?: string; date?: string; time?: string; startTimestamp?: number; endTimestamp?: number }): EventTimingInfo {
