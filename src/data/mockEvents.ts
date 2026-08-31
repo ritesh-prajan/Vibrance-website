@@ -96,7 +96,6 @@ export function generateSeatsForEvent(
   ];
 
   let totalGenerated = 0;
-  const now = Date.now();
 
   rows.forEach((r) => {
     for (let num = 1; num <= r.count; num++) {
@@ -117,26 +116,6 @@ export function generateSeatsForEvent(
             userName: `Student #${1000 + num}`,
             regNumber: `RA211100${1000 + num}`,
             bookingRef: `VIB26-${eventId.toUpperCase()}-${r.row}${num}`,
-          };
-        }
-      } else {
-        const hash = (seatId.charCodeAt(0) * 19 + seatId.charCodeAt(seatId.length - 1) * 31 + num * 11) % 100;
-        if (hash < 68) {
-          status = 'booked';
-          bookedBy = {
-            userId: `usr-${num}`,
-            userName: `Student #${1000 + num}`,
-            regNumber: `RA211100${1000 + num}`,
-            bookingRef: `VIB26-${eventId.toUpperCase()}-${r.row}${num}`,
-          };
-        } else if (hash < 76) {
-          status = 'locked';
-          const remainingSec = 40 + (num * 17) % 120;
-          lockExpiresAt = now + remainingSec * 1000;
-          lockedBy = {
-            userId: `usr-lock-${num}`,
-            userName: `Simulated User ${num}`,
-            regNumber: `RA211000${200 + num}`,
           };
         }
       }
