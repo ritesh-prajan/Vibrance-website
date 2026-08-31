@@ -26,12 +26,12 @@ import { getEventTiming } from '../utils/timeUtils';
 
 const STORAGE_KEYS = {
   USER: 'vibrance26_current_user',
-  USERS: 'vibrance26_users_v5',
-  EVENTS: 'vibrance26_events_v5',
-  BOOKINGS: 'vibrance26_bookings_v5',
-  LOGS: 'vibrance26_audit_logs_v5',
-  SCANS: 'vibrance26_scan_history_v5',
-  SIM_HISTORY: 'vibrance26_sim_history_v5',
+  USERS: 'vibrance26_users_v6',
+  EVENTS: 'vibrance26_events_v6',
+  BOOKINGS: 'vibrance26_bookings_v6',
+  LOGS: 'vibrance26_audit_logs_v6',
+  SCANS: 'vibrance26_scan_history_v6',
+  SIM_HISTORY: 'vibrance26_sim_history_v6',
 };
 
 interface FestContextType {

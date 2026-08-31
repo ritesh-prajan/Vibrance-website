@@ -101,14 +101,16 @@ export const AdminConcurrencyLabPage: React.FC = () => {
     }
     setIsStreaming(true);
     let index = 0;
-    const max = Math.max(noLock.length, twoPl.length);
+    setStreamedNoLockTxs([]);
+    setStreamedTwoPlTxs([]);
     if (timerRef.current) clearInterval(timerRef.current);
 
+    const maxLen = Math.max(noLock.length, twoPl.length);
     timerRef.current = setInterval(() => {
       index++;
       setStreamedNoLockTxs(noLock.slice(0, index));
       setStreamedTwoPlTxs(twoPl.slice(0, index));
-      if (index >= max) {
+      if (index >= maxLen) {
         clearInterval(timerRef.current);
         setIsStreaming(false);
       }
@@ -166,7 +168,7 @@ export const AdminConcurrencyLabPage: React.FC = () => {
       </div>
 
       {/* Control Panel Card */}
-      <div className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+      <GlassCard variant="default" rounded="3xl" glowColor="#DF367C" className="p-6 sm:p-8 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-mono text-xs">
           {/* 1. Protocol Select */}
           <div className="space-y-2">
@@ -177,7 +179,7 @@ export const AdminConcurrencyLabPage: React.FC = () => {
               value={strategy}
               onChange={(e: any) => setStrategy(e.target.value)}
               disabled={isSimulating || isStreaming}
-              className="w-full bg-[#2A1D26] border border-white/15 rounded-xl px-3.5 py-3 text-white focus:outline-none focus:border-[#DF367C] disabled:opacity-50"
+              className="w-full bg-[#2A1D26]/70 backdrop-blur-md border border-white/15 rounded-xl px-3.5 py-3 text-white focus:outline-none focus:border-[#DF367C] disabled:opacity-50"
             >
               <option value="NO_LOCKING">No Locking (Dirty Read / Lost Update Overbook)</option>
               <option value="TWO_PHASE_LOCKING">Strict 2-Phase Locking (Serializable 2PL)</option>
@@ -201,7 +203,7 @@ export const AdminConcurrencyLabPage: React.FC = () => {
                   className={`py-3 rounded-xl font-bold transition-colors cursor-pointer ${
                     concurrencyLevel === lvl
                       ? 'bg-[#DF367C] text-white shadow-md'
-                      : 'bg-[#2A1D26] text-white/60 hover:text-white border border-white/10'
+                      : 'bg-[#2A1D26]/70 backdrop-blur-md text-white/60 hover:text-white border border-white/10'
                   }`}
                 >
                   {lvl} Req
@@ -219,7 +221,7 @@ export const AdminConcurrencyLabPage: React.FC = () => {
               value={targetEventId}
               onChange={(e) => setTargetEventId(e.target.value)}
               disabled={isSimulating || isStreaming}
-              className="w-full bg-[#2A1D26] border border-white/15 rounded-xl px-3.5 py-3 text-white focus:outline-none focus:border-[#DF367C] disabled:opacity-50"
+              className="w-full bg-[#2A1D26]/70 backdrop-blur-md border border-white/15 rounded-xl px-3.5 py-3 text-white focus:outline-none focus:border-[#DF367C] disabled:opacity-50"
             >
               {events.map((e) => (
                 <option key={e.id} value={e.id}>
@@ -268,7 +270,7 @@ export const AdminConcurrencyLabPage: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
+      </GlassCard>
 
       {/* RESULTS DISPLAY SECTION */}
 
@@ -287,7 +289,7 @@ export const AdminConcurrencyLabPage: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left Col: No Locking */}
-            <div className="bg-[#4C3549] border-2 border-red-500/50 rounded-3xl p-6 space-y-5 shadow-2xl">
+            <GlassCard variant="danger" rounded="3xl" className="p-6 space-y-5 shadow-2xl">
               <div className="flex items-center justify-between">
                 <span className="px-3 py-1 rounded-md text-xs font-mono font-bold bg-red-500/20 text-red-400 border border-red-500/40">
                   NO LOCKING (READ UNCOMMITTED)
@@ -305,19 +307,19 @@ export const AdminConcurrencyLabPage: React.FC = () => {
 
               {/* Stats Strip */}
               <div className="grid grid-cols-3 gap-3 font-mono text-center text-xs">
-                <div className="bg-[#2A1D26] p-3 rounded-xl border border-white/10">
+                <div className="bg-[#2A1D26]/70 border border-white/10 p-3 rounded-xl">
                   <div className="text-[10px] text-white/40 uppercase">Committed</div>
                   <div className="text-xl font-black text-red-400">
                     {lastSideBySideResult.noLockResult.successfulCount}
                   </div>
                 </div>
-                <div className="bg-[#2A1D26] p-3 rounded-xl border border-white/10">
+                <div className="bg-[#2A1D26]/70 border border-white/10 p-3 rounded-xl">
                   <div className="text-[10px] text-white/40 uppercase">Rejected</div>
                   <div className="text-xl font-black text-white/60">
                     {lastSideBySideResult.noLockResult.rejectedCount}
                   </div>
                 </div>
-                <div className="bg-[#2A1D26] p-3 rounded-xl border border-red-500/40">
+                <div className="bg-[#2A1D26]/70 border border-red-500/40 p-3 rounded-xl">
                   <div className="text-[10px] text-red-400 uppercase font-bold">Final Stock</div>
                   <motion.div
                     animate={lastSideBySideResult.noLockResult.finalStock < 0 ? { scale: [1, 1.1, 1] } : {}}
@@ -347,7 +349,7 @@ export const AdminConcurrencyLabPage: React.FC = () => {
                         initial={reduced ? { opacity: 0 } : { opacity: 0, x: -10, backgroundColor: 'rgba(239,68,68,0.3)' }}
                         animate={{ opacity: 1, x: 0, backgroundColor: 'transparent' }}
                         transition={{ duration: 0.25 }}
-                        className={`p-2 rounded bg-[#2A1D26] border flex items-center justify-between ${
+                        className={`p-2 rounded bg-[#2A1D26]/70 border flex items-center justify-between ${
                           isAnomaly ? 'border-red-500 text-red-300' : 'border-white/5 text-white/80'
                         }`}
                       >
@@ -360,10 +362,10 @@ export const AdminConcurrencyLabPage: React.FC = () => {
                   })}
                 </AnimatePresence>
               </div>
-            </div>
+            </GlassCard>
 
             {/* Right Col: Strict 2PL */}
-            <div className="bg-[#4C3549] border-2 border-[#10B981]/60 rounded-3xl p-6 space-y-5 shadow-2xl">
+            <GlassCard variant="success" rounded="3xl" className="p-6 space-y-5 shadow-2xl">
               <div className="flex items-center justify-between">
                 <span className="px-3 py-1 rounded-md text-xs font-mono font-bold bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/40">
                   STRICT TWO-PHASE LOCKING (2PL)
@@ -375,19 +377,19 @@ export const AdminConcurrencyLabPage: React.FC = () => {
 
               {/* Stats Strip */}
               <div className="grid grid-cols-3 gap-3 font-mono text-center text-xs">
-                <div className="bg-[#2A1D26] p-3 rounded-xl border border-white/10">
+                <div className="bg-[#2A1D26]/70 border border-white/10 p-3 rounded-xl">
                   <div className="text-[10px] text-white/40 uppercase">Committed</div>
                   <div className="text-xl font-black text-[#10B981]">
                     {lastSideBySideResult.twoPlResult.successfulCount}
                   </div>
                 </div>
-                <div className="bg-[#2A1D26] p-3 rounded-xl border border-white/10">
+                <div className="bg-[#2A1D26]/70 border border-white/10 p-3 rounded-xl">
                   <div className="text-[10px] text-white/40 uppercase">Rejected (409)</div>
                   <div className="text-xl font-black text-white/60">
                     {lastSideBySideResult.twoPlResult.rejectedCount}
                   </div>
                 </div>
-                <div className="bg-[#2A1D26] p-3 rounded-xl border border-[#10B981]/40">
+                <div className="bg-[#2A1D26]/70 border border-[#10B981]/40 p-3 rounded-xl">
                   <div className="text-[10px] text-[#10B981] uppercase font-bold">Final Stock</div>
                   <div className="text-xl font-black text-[#10B981]">
                     {lastSideBySideResult.twoPlResult.finalStock}
@@ -411,7 +413,7 @@ export const AdminConcurrencyLabPage: React.FC = () => {
                       initial={reduced ? { opacity: 0 } : { opacity: 0, x: -10, backgroundColor: tx.status === 'COMMITTED' ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.05)' }}
                       animate={{ opacity: 1, x: 0, backgroundColor: 'transparent' }}
                       transition={{ duration: 0.25 }}
-                      className="p-2 rounded bg-[#2A1D26] border border-white/5 flex items-center justify-between"
+                      className="p-2 rounded bg-[#2A1D26]/70 border border-white/5 flex items-center justify-between"
                     >
                       <span>{tx.txId} ({tx.clientName})</span>
                       <span className={tx.status === 'COMMITTED' ? 'text-[#10B981] font-bold' : 'text-white/40'}>
@@ -421,7 +423,7 @@ export const AdminConcurrencyLabPage: React.FC = () => {
                   ))}
                 </AnimatePresence>
               </div>
-            </div>
+            </GlassCard>
           </div>
         </div>
       )}
@@ -429,7 +431,12 @@ export const AdminConcurrencyLabPage: React.FC = () => {
       {/* 2. SINGLE RUN DETAILED RESULT */}
       {viewMode === 'SINGLE' && lastSimResult && (
         <div className="space-y-6">
-          <div className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+          <GlassCard
+            variant={lastSimResult.overbookingDetected ? 'danger' : 'default'}
+            rounded="3xl"
+            glowColor={lastSimResult.overbookingDetected ? '#ef4444' : '#10B981'}
+            className="p-6 sm:p-8 space-y-6"
+          >
             <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-white/10">
               <div>
                 <span className="text-[10px] font-mono font-bold uppercase tracking-widest px-2.5 py-0.5 rounded bg-white/10 text-white/70">
@@ -459,29 +466,29 @@ export const AdminConcurrencyLabPage: React.FC = () => {
 
             {/* Summary KPI Strip with Count-Up */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 font-mono text-xs text-center">
-              <div className="p-3.5 bg-[#2A1D26] rounded-xl border border-white/10">
+              <div className="p-3.5 bg-[#2A1D26]/70 rounded-xl border border-white/10">
                 <div className="text-[10px] text-white/40 uppercase">Requests</div>
                 <div className="text-xl font-black text-white">{lastSimResult.concurrencyLevel}</div>
               </div>
 
-              <div className="p-3.5 bg-[#2A1D26] rounded-xl border border-white/10">
+              <div className="p-3.5 bg-[#2A1D26]/70 rounded-xl border border-white/10">
                 <div className="text-[10px] text-[#10B981] uppercase">Committed</div>
                 <div className="text-xl font-black text-[#10B981]">{singleCommitted}</div>
               </div>
 
-              <div className="p-3.5 bg-[#2A1D26] rounded-xl border border-white/10">
+              <div className="p-3.5 bg-[#2A1D26]/70 rounded-xl border border-white/10">
                 <div className="text-[10px] text-white/40 uppercase">Rejected</div>
                 <div className="text-xl font-black text-white/60">{singleRejected}</div>
               </div>
 
-              <div className="p-3.5 bg-[#2A1D26] rounded-xl border border-white/10">
+              <div className="p-3.5 bg-[#2A1D26]/70 rounded-xl border border-white/10">
                 <div className="text-[10px] text-white/40 uppercase">Final Stock</div>
                 <div className={`text-xl font-black ${lastSimResult.finalStock < 0 ? 'text-red-400 font-bold' : 'text-white'}`}>
                   {singleFinalStock}
                 </div>
               </div>
 
-              <div className="p-3.5 bg-[#2A1D26] rounded-xl border border-white/10">
+              <div className="p-3.5 bg-[#2A1D26]/70 rounded-xl border border-white/10">
                 <div className="text-[10px] text-white/40 uppercase">Duration</div>
                 <div className="text-xl font-black text-[#FF7099]">{lastSimResult.durationMs}ms</div>
               </div>
@@ -545,7 +552,7 @@ export const AdminConcurrencyLabPage: React.FC = () => {
                             }
                             animate={{ opacity: 1, x: 0, backgroundColor: isOverbookAnomaly ? 'rgba(239,68,68,0.1)' : 'transparent' }}
                             transition={{ duration: 0.25 }}
-                            className={`hover:bg-white/5 ${isOverbookAnomaly ? 'text-red-300 font-semibold' : ''}`}
+                            className={`hover:bg-white/5 transition-colors ${isOverbookAnomaly ? 'text-red-300 font-semibold' : ''}`}
                           >
                             <td className="py-2.5 pr-3 font-bold text-[#FF7099]">{tx.txId}</td>
                             <td className="py-2.5 px-3 text-white">{tx.clientName}</td>
@@ -592,7 +599,7 @@ export const AdminConcurrencyLabPage: React.FC = () => {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="bg-[#2A1D26] p-4 rounded-2xl border border-white/10 space-y-2 text-[11px] text-[#FF7099] overflow-x-auto"
+                    className="bg-[#2A1D26]/80 p-4 rounded-2xl border border-white/10 space-y-2 text-[11px] text-[#FF7099] overflow-x-auto"
                   >
                     <div className="text-white/40 uppercase text-[10px]">Raw SQL Query Sequence:</div>
                     {lastSimResult.dbLogs.map((log, i) => (
@@ -602,7 +609,7 @@ export const AdminConcurrencyLabPage: React.FC = () => {
                 )}
               </AnimatePresence>
             </div>
-          </div>
+          </GlassCard>
         </div>
       )}
     </div>

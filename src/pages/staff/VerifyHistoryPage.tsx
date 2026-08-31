@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import { GlassCard } from '../../components/common/GlassCard';
+
 export const VerifyHistoryPage: React.FC = () => {
   const { scanHistory, clearScanHistory } = useFest();
 
@@ -76,31 +78,31 @@ export const VerifyHistoryPage: React.FC = () => {
 
       {/* Summary KPI Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 font-mono text-xs">
-        <div className="bg-[#4C3549] p-4 rounded-2xl border border-white/15">
+        <GlassCard variant="subtle" rounded="2xl" className="p-4 space-y-1">
           <div className="text-[10px] text-white/40 uppercase">Total Scans</div>
           <div className="text-2xl font-black text-white mt-1">{scanHistory.length}</div>
-        </div>
+        </GlassCard>
 
-        <div className="bg-[#4C3549] p-4 rounded-2xl border border-white/15">
+        <GlassCard variant="success" rounded="2xl" className="p-4 space-y-1">
           <div className="text-[10px] text-[#10B981] uppercase flex items-center gap-1">
             <CheckCircle2 className="w-3.5 h-3.5" /> Valid Check-ins
           </div>
           <div className="text-2xl font-black text-[#10B981] mt-1">{validCount}</div>
-        </div>
+        </GlassCard>
 
-        <div className="bg-[#4C3549] p-4 rounded-2xl border border-white/15">
+        <GlassCard variant="danger" rounded="2xl" className="p-4 space-y-1">
           <div className="text-[10px] text-amber-300 uppercase flex items-center gap-1">
             <AlertTriangle className="w-3.5 h-3.5" /> Duplicates Intercepted
           </div>
           <div className="text-2xl font-black text-amber-300 mt-1">{duplicateCount}</div>
-        </div>
+        </GlassCard>
 
-        <div className="bg-[#4C3549] p-4 rounded-2xl border border-white/15">
+        <GlassCard variant="danger" rounded="2xl" className="p-4 space-y-1">
           <div className="text-[10px] text-red-400 uppercase flex items-center gap-1">
             <XCircle className="w-3.5 h-3.5" /> Invalid Passes
           </div>
           <div className="text-2xl font-black text-red-400 mt-1">{invalidCount}</div>
-        </div>
+        </GlassCard>
       </div>
 
       {/* Filter and Search Bar */}
@@ -109,7 +111,7 @@ export const VerifyHistoryPage: React.FC = () => {
           <button
             onClick={() => setFilterResult('ALL')}
             className={`px-3 py-1.5 rounded-xl font-semibold transition-colors cursor-pointer ${
-              filterResult === 'ALL' ? 'bg-[#DF367C] text-white font-bold' : 'bg-[#4C3549] text-white/60 hover:text-white'
+              filterResult === 'ALL' ? 'bg-[#DF367C] text-white font-bold' : 'bg-[#4C3549]/60 backdrop-blur-md text-white/60 hover:text-white border border-white/10'
             }`}
           >
             All Results ({scanHistory.length})
@@ -117,7 +119,7 @@ export const VerifyHistoryPage: React.FC = () => {
           <button
             onClick={() => setFilterResult('VALID')}
             className={`px-3 py-1.5 rounded-xl font-semibold transition-colors cursor-pointer ${
-              filterResult === 'VALID' ? 'bg-[#DF367C] text-white font-bold' : 'bg-[#4C3549] text-white/60 hover:text-white'
+              filterResult === 'VALID' ? 'bg-[#DF367C] text-white font-bold' : 'bg-[#4C3549]/60 backdrop-blur-md text-white/60 hover:text-white border border-white/10'
             }`}
           >
             Valid Passes ({validCount})
@@ -125,7 +127,7 @@ export const VerifyHistoryPage: React.FC = () => {
           <button
             onClick={() => setFilterResult('ALREADY_USED')}
             className={`px-3 py-1.5 rounded-xl font-semibold transition-colors cursor-pointer ${
-              filterResult === 'ALREADY_USED' ? 'bg-[#DF367C] text-white font-bold' : 'bg-[#4C3549] text-white/60 hover:text-white'
+              filterResult === 'ALREADY_USED' ? 'bg-[#DF367C] text-white font-bold' : 'bg-[#4C3549]/60 backdrop-blur-md text-white/60 hover:text-white border border-white/10'
             }`}
           >
             Duplicates ({duplicateCount})
@@ -133,7 +135,7 @@ export const VerifyHistoryPage: React.FC = () => {
           <button
             onClick={() => setFilterResult('INVALID')}
             className={`px-3 py-1.5 rounded-xl font-semibold transition-colors cursor-pointer ${
-              filterResult === 'INVALID' ? 'bg-[#DF367C] text-white font-bold' : 'bg-[#4C3549] text-white/60 hover:text-white'
+              filterResult === 'INVALID' ? 'bg-[#DF367C] text-white font-bold' : 'bg-[#4C3549]/60 backdrop-blur-md text-white/60 hover:text-white border border-white/10'
             }`}
           >
             Invalid ({invalidCount})
@@ -147,7 +149,7 @@ export const VerifyHistoryPage: React.FC = () => {
             placeholder="Search ref, attendee, event..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#4C3549] border border-white/15 rounded-xl pl-9 pr-4 py-2 text-xs text-white font-mono placeholder-white/40 focus:border-[#DF367C] focus:outline-none"
+            className="w-full bg-[#4C3549]/60 backdrop-blur-md border border-white/15 rounded-xl pl-9 pr-4 py-2 text-xs text-white font-mono placeholder-white/40 focus:border-[#DF367C] focus:outline-none"
           />
         </div>
       </div>
@@ -164,7 +166,7 @@ export const VerifyHistoryPage: React.FC = () => {
           }}
         />
       ) : (
-        <div className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl overflow-x-auto">
+        <GlassCard variant="default" rounded="3xl" className="p-6 sm:p-8 overflow-x-auto">
           <table className="w-full text-left font-mono text-xs">
             <thead>
               <tr className="border-b border-white/10 text-white/40 text-[10px] uppercase">
@@ -179,7 +181,7 @@ export const VerifyHistoryPage: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-white/5 text-white/80">
               {filtered.map((s) => (
-                <tr key={s.id} className="hover:bg-white/5">
+                <tr key={s.id} className="hover:bg-white/5 transition-colors">
                   <td className="py-3 pr-4 text-white/50 text-[11px]">
                     {new Date(s.timestamp).toLocaleTimeString()}
                   </td>
@@ -205,7 +207,7 @@ export const VerifyHistoryPage: React.FC = () => {
               ))}
             </tbody>
           </table>
-        </div>
+        </GlassCard>
       )}
     </div>
   );

@@ -16,6 +16,8 @@ import { StageLightBeams } from '../../components/landing/StageLightBeams';
 import { ParticleHazeCanvas } from '../../components/landing/ParticleHazeCanvas';
 import AuroraBackground from '../../components/ui/aurora-background';
 
+import { GlassCard } from '../../components/common/GlassCard';
+
 export const LoginPage: React.FC = () => {
   const { loginAsStudent, loginAsGateStaff, loginAsAdmin } = useFest();
   const navigate = useNavigate();
@@ -181,10 +183,10 @@ export const LoginPage: React.FC = () => {
                     whileHover={{ y: -3, boxShadow: `0 12px 40px ${color}25` }}
                     whileTap={{ scale: 0.96 }}
                     onClick={() => setSelectedRole(role)}
-                    className={`relative p-4 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                    className={`relative p-4 rounded-2xl border-2 text-left transition-all cursor-pointer backdrop-blur-xl ${
                       selectedRole === role
-                        ? 'border-[var(--c)] bg-[var(--c)]/15 shadow-lg'
-                        : 'border-white/10 bg-[#4C3549]/90 hover:border-white/25'
+                        ? 'border-[var(--c)] bg-[var(--c)]/20 shadow-lg'
+                        : 'border-white/10 bg-[#4C3549]/60 hover:border-white/25 hover:bg-[#4C3549]/80'
                     }`}
                     style={{ '--c': color } as React.CSSProperties}
                   >
@@ -205,7 +207,7 @@ export const LoginPage: React.FC = () => {
               </motion.div>
 
               {/* Persona Profiles */}
-              <div className="bg-[#4C3549]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl space-y-4">
+              <GlassCard variant="default" rounded="3xl" glowColor="#DF367C" className="p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-mono text-white/60 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-[#FF7099]" />
@@ -223,10 +225,10 @@ export const LoginPage: React.FC = () => {
                         whileHover={{ x: 4 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleQuickProfileLogin(p, selectedRole)}
-                        className={`w-full p-3.5 rounded-2xl border transition-all text-left flex items-center justify-between cursor-pointer ${
+                        className={`w-full p-3.5 rounded-2xl border transition-all text-left flex items-center justify-between cursor-pointer backdrop-blur-md ${
                           isPending
-                            ? 'border-[#FF3E41] bg-[#FF3E41]/20'
-                            : 'border-white/10 bg-[#2A1D26]/70 hover:border-white/30 hover:bg-[#2A1D26]'
+                            ? 'border-[#FF3E41] bg-[#FF3E41]/25'
+                            : 'border-white/10 bg-[#2A1D26]/60 hover:border-white/30 hover:bg-[#2A1D26]/90'
                         }`}
                       >
                         <div className="flex items-center gap-3">
@@ -255,12 +257,12 @@ export const LoginPage: React.FC = () => {
                     );
                   })}
                 </div>
-              </div>
+              </GlassCard>
             </div>
 
             {/* Right: Custom Login Form */}
             <div className="lg:col-span-2">
-              <div className="bg-[#4C3549]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl space-y-4 h-full flex flex-col justify-between">
+              <GlassCard variant="default" rounded="3xl" glowColor="#FF3E41" className="p-6 space-y-4 h-full flex flex-col justify-between">
                 <div>
                   <span className="text-xs font-mono text-white/60 block mb-1">MANUAL CREDENTIALS</span>
                   <h2 className="text-lg font-bold text-white font-display">Sign In as {roles.find((r) => r.role === selectedRole)?.label}</h2>
@@ -276,7 +278,7 @@ export const LoginPage: React.FC = () => {
                         placeholder="e.g. John Doe"
                         value={customName}
                         onChange={(e) => setCustomName(e.target.value)}
-                        className="w-full bg-[#2A1D26] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#FF3E41]"
+                        className="w-full bg-[#2A1D26]/70 backdrop-blur-md border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#FF3E41]"
                       />
                     </div>
 
@@ -289,7 +291,7 @@ export const LoginPage: React.FC = () => {
                         placeholder={selectedRole === 'student' ? 'e.g. 22BCE1001' : 'e.g. STAFF-99'}
                         value={customIdentifier}
                         onChange={(e) => setCustomIdentifier(e.target.value)}
-                        className="w-full bg-[#2A1D26] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#FF3E41]"
+                        className="w-full bg-[#2A1D26]/70 backdrop-blur-md border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#FF3E41]"
                       />
                     </div>
 
@@ -300,7 +302,7 @@ export const LoginPage: React.FC = () => {
                         placeholder="e.g. SCOPE, SENSE, Operations"
                         value={customDept}
                         onChange={(e) => setCustomDept(e.target.value)}
-                        className="w-full bg-[#2A1D26] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#FF3E41]"
+                        className="w-full bg-[#2A1D26]/70 backdrop-blur-md border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#FF3E41]"
                       />
                     </div>
 
@@ -321,7 +323,7 @@ export const LoginPage: React.FC = () => {
                     Register new student profile &rarr;
                   </Link>
                 </div>
-              </div>
+              </GlassCard>
             </div>
           </div>
         </div>

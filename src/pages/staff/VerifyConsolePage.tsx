@@ -8,6 +8,8 @@ import { ShieldCheck, Search, CheckCircle2, AlertTriangle, XCircle, Clock, Histo
 import { Link } from 'react-router-dom';
 import { QrScanner } from '../../components/QrScanner';
 
+import { GlassCard } from '../../components/common/GlassCard';
+
 export const VerifyConsolePage: React.FC = () => {
   const { currentUser, verifyTicket, scanHistory } = useFest();
   const reduced = usePrefersReducedMotion();
@@ -68,7 +70,7 @@ export const VerifyConsolePage: React.FC = () => {
             <QrCode className="w-3.5 h-3.5 text-[#FF7099]" />
             <span>View Demo QR Codes</span>
           </Link>
-          <div className="bg-[#4C3549] border border-white/15 rounded-2xl p-3.5 flex items-center gap-3 text-xs font-mono">
+          <GlassCard variant="subtle" rounded="2xl" className="p-3.5 flex items-center gap-3 text-xs font-mono">
             <div className="w-8 h-8 rounded-xl bg-[#DF367C] text-white flex items-center justify-center font-bold">
               <ShieldCheck className="w-4 h-4" />
             </div>
@@ -76,12 +78,12 @@ export const VerifyConsolePage: React.FC = () => {
               <div className="text-white font-bold">{staff.name}</div>
               <div className="text-[#FF7099] text-[10px]">{staff.staffId} &bull; Active Post</div>
             </div>
-          </div>
+          </GlassCard>
         </div>
       </div>
 
       {/* Scanner Input */}
-      <div className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+      <GlassCard variant="default" rounded="3xl" glowColor="#DF367C" className="p-6 sm:p-8 space-y-6">
         {/* Camera Scan Button */}
         <motion.button
           whileTap={{ scale: 0.97 }}
@@ -149,7 +151,7 @@ export const VerifyConsolePage: React.FC = () => {
             </motion.button>
           </div>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Scan Result */}
       <AnimatePresence mode="wait">
@@ -159,9 +161,12 @@ export const VerifyConsolePage: React.FC = () => {
 
             {/* VALID */}
             {lastScanResult.result === 'VALID' && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                className="bg-[#4C3549] border-2 border-[#10B981] rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6"
+              <GlassCard
+                variant="success"
+                rounded="3xl"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-6 sm:p-8 space-y-6"
               >
                 <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-white/10">
                   <div className="flex items-center gap-3">
@@ -176,30 +181,33 @@ export const VerifyConsolePage: React.FC = () => {
                   <StatusBadge status="VALID" size="lg" />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-xs">
-                  <div className="p-4 rounded-xl bg-[#2A1D26] border border-white/10 space-y-1">
+                  <div className="p-4 rounded-xl bg-[#2A1D26]/70 border border-white/10 space-y-1">
                     <div className="text-[10px] text-white/40 uppercase">Attendee</div>
                     <div className="font-bold text-white text-base">{lastScanResult.attendeeName}</div>
                     <div className="text-[#FF7099]">Verified Student</div>
                   </div>
-                  <div className="p-4 rounded-xl bg-[#2A1D26] border border-white/10 space-y-1">
+                  <div className="p-4 rounded-xl bg-[#2A1D26]/70 border border-white/10 space-y-1">
                     <div className="text-[10px] text-white/40 uppercase">Seat Assignment</div>
                     <div className="font-black text-white text-xl">Seat {lastScanResult.seatLabel}</div>
                     <div className="text-[#FF7099]">Reserved Seat</div>
                   </div>
-                  <div className="p-4 rounded-xl bg-[#2A1D26] border border-white/10 space-y-1">
+                  <div className="p-4 rounded-xl bg-[#2A1D26]/70 border border-white/10 space-y-1">
                     <div className="text-[10px] text-white/40 uppercase">Pass Reference</div>
                     <div className="font-bold text-[#FF7099] text-base">{lastScanResult.bookingRef}</div>
                     <div className="text-[10px] text-white/50">Checked in just now</div>
                   </div>
                 </div>
-              </motion.div>
+              </GlassCard>
             )}
 
             {/* EXPIRED */}
             {lastScanResult.result === 'EXPIRED' && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                className="bg-[#4C3549] border-2 border-amber-500 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6"
+              <GlassCard
+                variant="danger"
+                rounded="3xl"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-6 sm:p-8 space-y-6"
               >
                 <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-white/10">
                   <div className="flex items-center gap-3">
@@ -218,14 +226,17 @@ export const VerifyConsolePage: React.FC = () => {
                 <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-xs font-mono text-amber-200">
                   {lastScanResult.message} Pass belongs to concluded event [{lastScanResult.eventTitle}]. Admission barred.
                 </div>
-              </motion.div>
+              </GlassCard>
             )}
 
             {/* ALREADY USED */}
             {lastScanResult.result === 'ALREADY_USED' && (
-              <motion.div
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="bg-[#4C3549] border-2 border-amber-500 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6"
+              <GlassCard
+                variant="danger"
+                rounded="3xl"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="p-6 sm:p-8 space-y-6"
               >
                 <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-white/10">
                   <div className="flex items-center gap-3">
@@ -242,14 +253,17 @@ export const VerifyConsolePage: React.FC = () => {
                 <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-xs font-mono text-amber-200">
                   Duplicate code detected. Intercept holder. Original check-in: {lastScanResult.originalCheckedInBy}.
                 </div>
-              </motion.div>
+              </GlassCard>
             )}
 
             {/* INVALID */}
             {lastScanResult.result === 'INVALID' && (
-              <motion.div
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="bg-[#4C3549] border-2 border-red-500 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6"
+              <GlassCard
+                variant="danger"
+                rounded="3xl"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="p-6 sm:p-8 space-y-6"
               >
                 <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-white/10">
                   <div className="flex items-center gap-3">
@@ -263,14 +277,14 @@ export const VerifyConsolePage: React.FC = () => {
                   </div>
                   <StatusBadge status="INVALID" size="lg" />
                 </div>
-              </motion.div>
+              </GlassCard>
             )}
           </div>
         )}
       </AnimatePresence>
 
       {/* Recent Scans */}
-      <div className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-4">
+      <GlassCard variant="default" rounded="3xl" className="p-6 sm:p-8 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <History className="w-4 h-4 text-[#FF7099]" />
@@ -292,7 +306,7 @@ export const VerifyConsolePage: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-white/5 text-white/80">
               {scanHistory.slice(0, 6).map((scan) => (
-                <tr key={scan.id} className="hover:bg-white/5">
+                <tr key={scan.id} className="hover:bg-white/5 transition-colors">
                   <td className="py-3 pr-4 text-white/50 text-[11px]">{new Date(scan.timestamp).toLocaleTimeString()}</td>
                   <td className="py-3 px-4"><StatusBadge status={scan.result} size="sm" /></td>
                   <td className="py-3 px-4 font-bold text-[#FF7099]">{scan.bookingRef || scan.query}</td>
@@ -304,7 +318,7 @@ export const VerifyConsolePage: React.FC = () => {
             </tbody>
           </table>
         </div>
-      </div>
+      </GlassCard>
     </div>
   );
 };

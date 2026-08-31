@@ -14,6 +14,8 @@ import {
   Flame,
 } from 'lucide-react';
 
+import { GlassCard } from '../../components/common/GlassCard';
+
 export const AdminAuditLogsPage: React.FC = () => {
   const { auditLogs, clearAuditLogs } = useFest();
   const reduced = usePrefersReducedMotion();
@@ -132,7 +134,7 @@ export const AdminAuditLogsPage: React.FC = () => {
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 shadow-xl space-y-4 font-mono text-xs">
+      <GlassCard variant="subtle" rounded="2xl" className="p-6 space-y-4 font-mono text-xs">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="relative flex-1 w-full md:w-auto">
             <Search className="w-4 h-4 text-white/40 absolute left-4 top-1/2 -translate-y-1/2" />
@@ -141,7 +143,7 @@ export const AdminAuditLogsPage: React.FC = () => {
               placeholder="Search by action, resource ID, user, or details..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#2A1D26] border border-white/15 rounded-xl pl-11 pr-4 py-2.5 text-white placeholder-white/40 focus:outline-none focus:border-[#FF3E41]"
+              className="w-full bg-[#2A1D26]/70 backdrop-blur-md border border-white/15 rounded-xl pl-11 pr-4 py-2.5 text-white placeholder-white/40 focus:outline-none focus:border-[#FF3E41]"
             />
           </div>
 
@@ -150,7 +152,7 @@ export const AdminAuditLogsPage: React.FC = () => {
             <select
               value={selectedAction}
               onChange={(e) => setSelectedAction(e.target.value)}
-              className="bg-[#2A1D26] border border-white/15 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-[#FF3E41] w-full md:w-auto"
+              className="bg-[#2A1D26]/70 backdrop-blur-md border border-white/15 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-[#FF3E41] w-full md:w-auto"
             >
               {actionTypes.map((a) => (
                 <option key={a.value} value={a.value}>
@@ -160,10 +162,10 @@ export const AdminAuditLogsPage: React.FC = () => {
             </select>
           </div>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Audit Log Table with Animated Rows */}
-      <div className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-4">
+      <GlassCard variant="default" rounded="3xl" className="p-6 sm:p-8 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-white font-display tracking-wide flex items-center gap-2">
             <Activity className="w-5 h-5 text-[#FF7099]" />
@@ -193,7 +195,7 @@ export const AdminAuditLogsPage: React.FC = () => {
                     initial={reduced ? { opacity: 0 } : { opacity: 0, x: -10, backgroundColor: 'rgba(255,255,255,0.05)' }}
                     animate={{ opacity: 1, x: 0, backgroundColor: 'transparent' }}
                     transition={{ duration: 0.25 }}
-                    className="hover:bg-white/5"
+                    className="hover:bg-white/5 transition-colors"
                   >
                     <td className="py-3 pr-3 text-white/50 text-[11px] whitespace-nowrap">
                       {new Date(log.timestamp).toLocaleTimeString()}
@@ -210,7 +212,7 @@ export const AdminAuditLogsPage: React.FC = () => {
             </tbody>
           </table>
         </div>
-      </div>
+      </GlassCard>
     </div>
   );
 };

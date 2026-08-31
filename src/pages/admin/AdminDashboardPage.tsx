@@ -5,14 +5,18 @@ import { motion } from 'framer-motion';
 import { useCountUp } from '../../hooks/useCountUp';
 import { LayoutDashboard, Calendar, Ticket, Cpu, Activity, DollarSign, ShieldCheck, Flame, ArrowRight, Database, TrendingUp } from 'lucide-react';
 
+import { GlassCard } from '../../components/common/GlassCard';
+
 const KpiCard: React.FC<{ label: string; value: number; suffix?: string; color: string; icon: React.ReactNode; sub: string; index: number }> = ({ label, value, suffix = '', color, icon, sub, index }) => {
   const counted = useCountUp(value, 900);
   return (
-    <motion.div
+    <GlassCard
+      variant="default"
+      rounded="2xl"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.07 }}
-      className="bg-[#4C3549] border border-white/15 rounded-2xl p-5 space-y-2 shadow-lg"
+      className="p-5 space-y-2"
     >
       <div className="flex items-center justify-between text-white/40 text-[10px] uppercase font-mono">
         <span>{label}</span>
@@ -22,7 +26,7 @@ const KpiCard: React.FC<{ label: string; value: number; suffix?: string; color: 
         {suffix === '₹' ? `₹${counted.toLocaleString()}` : `${counted}${suffix}`}
       </div>
       <div className="text-[11px] text-white/50 font-mono">{sub}</div>
-    </motion.div>
+    </GlassCard>
   );
 };
 
@@ -98,15 +102,18 @@ export const AdminDashboardPage: React.FC = () => {
             sub: 'ACID telemetry & check-in trail',
           },
         ].map(({ to, tag, icon, color, title, sub }, i) => (
-          <motion.div
+          <GlassCard
             key={to}
+            variant="interactive"
+            rounded="2xl"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.35 + i * 0.07 }}
+            className="p-5 space-y-2"
           >
             <Link
               to={to}
-              className="bg-[#4C3549] border border-white/15 rounded-2xl p-5 space-y-2 shadow-lg hover:border-white/30 hover:bg-[#553c52] transition-all group block"
+              className="block group"
             >
               <div className="flex items-center justify-between text-white/40 text-[10px] uppercase font-mono">
                 <span>{tag}</span>
@@ -120,16 +127,18 @@ export const AdminDashboardPage: React.FC = () => {
               </div>
               <div className="text-[11px] text-white/50 font-mono truncate">{sub}</div>
             </Link>
-          </motion.div>
+          </GlassCard>
         ))}
       </div>
 
       {/* Per-Event Sales Breakdown Table */}
-      <motion.div
+      <GlassCard
+        variant="default"
+        rounded="3xl"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: 0.55 }}
-        className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-4"
+        className="p-6 sm:p-8 space-y-4"
       >
         <h2 className="text-lg font-bold text-white font-display tracking-wide">EVENT INVENTORY &amp; SALES BREAKDOWN</h2>
         <div className="overflow-x-auto">
@@ -150,7 +159,7 @@ export const AdminDashboardPage: React.FC = () => {
               {events.map((e) => {
                 const bookedPct = Math.round((e.bookedSeatsCount / e.totalSeats) * 100);
                 return (
-                  <tr key={e.id} className="hover:bg-white/5">
+                  <tr key={e.id} className="hover:bg-white/5 transition-colors">
                     <td className="py-3 pr-4 font-bold text-white">{e.title}</td>
                     <td className="py-3 px-4 text-white/60">{e.category.replace('_', ' ')}</td>
                     <td className="py-3 px-4 text-[#FF7099]">&#8377;{e.basePrice}</td>
@@ -172,7 +181,7 @@ export const AdminDashboardPage: React.FC = () => {
             </tbody>
           </table>
         </div>
-      </motion.div>
+      </GlassCard>
     </div>
   );
 };

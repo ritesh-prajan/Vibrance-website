@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { EventDetailsModal } from '../../components/events/EventDetailsModal';
+import { GlassCard } from '../../components/common/GlassCard';
 
 const TICKET_BG_PRESETS = [
   {
@@ -223,7 +224,7 @@ export const AdminEventsPage: React.FC = () => {
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="bg-[#4C3549]/80 border border-white/15 rounded-2xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
+      <GlassCard variant="subtle" rounded="2xl" className="p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-white/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
@@ -231,7 +232,7 @@ export const AdminEventsPage: React.FC = () => {
             placeholder="Search events by title, artist, or venue..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#2A1D26] border border-white/15 text-white placeholder-white/30 focus:outline-none focus:border-[#DF367C]"
+            className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#2A1D26]/70 backdrop-blur-md border border-white/15 text-white placeholder-white/30 focus:outline-none focus:border-[#DF367C]"
           />
         </div>
 
@@ -239,7 +240,7 @@ export const AdminEventsPage: React.FC = () => {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-[#2A1D26] border border-white/15 rounded-xl px-3 py-2 text-white/80 focus:outline-none focus:border-[#DF367C]"
+            className="bg-[#2A1D26]/70 backdrop-blur-md border border-white/15 rounded-xl px-3 py-2 text-white/80 focus:outline-none focus:border-[#DF367C]"
           >
             <option value="ALL">All Categories</option>
             <option value="PRO_SHOW">Pro Shows</option>
@@ -249,12 +250,12 @@ export const AdminEventsPage: React.FC = () => {
             <option value="BATTLE_OF_BANDS">Battle of Bands</option>
             <option value="HACKATHON">Hackathon</option>
           </select>
-          <span className="text-white/40 px-2">Total: {filteredEvents.length}</span>
+          <span className="text-white/40 px-2 font-mono">Total: {filteredEvents.length}</span>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Events Inventory Table */}
-      <div className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl overflow-x-auto space-y-4">
+      <GlassCard variant="default" rounded="3xl" className="p-6 sm:p-8 overflow-x-auto space-y-4">
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-white/10 text-white/40 text-[10px] uppercase">
@@ -351,16 +352,16 @@ export const AdminEventsPage: React.FC = () => {
         </table>
 
         {filteredEvents.length === 0 && (
-          <div className="text-center py-8 text-white/40">
+          <div className="text-center py-8 text-white/40 font-mono">
             No events match your current filter query.
           </div>
         )}
-      </div>
+      </GlassCard>
 
       {/* Create Event Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-[#4C3549] border border-white/20 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-5 my-8">
+          <GlassCard variant="default" rounded="3xl" glowColor="#DF367C" className="p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-5 my-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 rounded bg-[#DF367C]/30 text-[#FF7099] text-[10px] font-bold">
@@ -598,14 +599,14 @@ export const AdminEventsPage: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
+          </GlassCard>
         </div>
       )}
 
       {/* Edit Event Modal */}
       {editingEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-[#4C3549] border border-white/20 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-5 my-8">
+          <GlassCard variant="default" rounded="3xl" glowColor="#FF7099" className="p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-5 my-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 rounded bg-[#FF7099]/20 text-[#FF7099] text-[10px] font-bold">
@@ -826,14 +827,14 @@ export const AdminEventsPage: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
+          </GlassCard>
         </div>
       )}
 
       {/* Delete Confirmation Modal */}
       {deletingEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#4C3549] border border-red-500/40 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5">
+          <GlassCard variant="danger" rounded="3xl" glowColor="#ef4444" className="p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5">
             <div className="flex items-center gap-3 text-red-400">
               <div className="p-3 rounded-2xl bg-red-500/20 border border-red-500/30">
                 <AlertTriangle className="w-6 h-6" />
@@ -844,7 +845,7 @@ export const AdminEventsPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-[#2A1D26] border border-white/10 space-y-2 text-xs">
+            <div className="p-4 rounded-xl bg-[#2A1D26]/70 border border-white/10 space-y-2 text-xs">
               <div className="font-bold text-white text-sm">{deletingEvent.title}</div>
               <div className="text-white/60">{deletingEvent.artistOrHost} &bull; {deletingEvent.venue}</div>
               <div className="text-amber-300 text-[11px]">
@@ -869,7 +870,7 @@ export const AdminEventsPage: React.FC = () => {
                 <span>Confirm Delete</span>
               </button>
             </div>
-          </div>
+          </GlassCard>
         </div>
       )}
     </div>

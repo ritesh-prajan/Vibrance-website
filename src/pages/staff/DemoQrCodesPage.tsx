@@ -94,6 +94,8 @@ const QrCodeCanvas: React.FC<{ payload: string; color: string }> = ({ payload, c
   );
 };
 
+import { GlassCard } from '../../components/common/GlassCard';
+
 export const DemoQrCodesPage: React.FC = () => {
   return (
     <div className="space-y-8 font-mono">
@@ -118,10 +120,13 @@ export const DemoQrCodesPage: React.FC = () => {
       {/* QR Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {DEMO_QRS.map((qr) => (
-          <div
+          <GlassCard
             key={qr.payload}
-            className="bg-[#4C3549] border border-white/15 rounded-3xl p-6 space-y-4 shadow-xl"
-            style={{ borderColor: `${qr.color}33` }}
+            variant="default"
+            rounded="3xl"
+            glowColor={qr.color}
+            className="p-6 space-y-4 shadow-xl"
+            style={{ borderColor: `${qr.color}44` }}
           >
             {/* Badge */}
             <div
@@ -141,15 +146,15 @@ export const DemoQrCodesPage: React.FC = () => {
             <QrCodeCanvas payload={qr.payload} color={qr.color} />
 
             {/* Payload Text */}
-            <div className="rounded-xl bg-[#2A1D26] border border-white/10 px-3.5 py-2.5 text-[11px] text-white/70 break-all">
+            <div className="rounded-xl bg-[#2A1D26]/80 border border-white/10 px-3.5 py-2.5 text-[11px] text-white/70 break-all">
               {qr.payload}
             </div>
-          </div>
+          </GlassCard>
         ))}
       </div>
 
       {/* Instructions */}
-      <div className="bg-[#4C3549]/60 border border-white/10 rounded-3xl p-6 space-y-3 text-xs text-white/60">
+      <GlassCard variant="subtle" rounded="3xl" className="p-6 space-y-3 text-xs text-white/60">
         <div className="text-white font-bold text-sm">How to use for demo:</div>
         <ol className="space-y-2 list-decimal list-inside">
           <li>Save the green <span className="text-emerald-300">VALID</span> QR images (click Save PNG below each).</li>
@@ -161,7 +166,7 @@ export const DemoQrCodesPage: React.FC = () => {
         <div className="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200">
           The expired and invalid codes will demonstrate how the system rejects unauthorized entry attempts.
         </div>
-      </div>
+      </GlassCard>
     </div>
   );
 };

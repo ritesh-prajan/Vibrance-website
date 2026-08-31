@@ -119,3 +119,36 @@
   66%  { opacity: 0.60; transform: scale(0.96) rotate(-1deg); }
   100% { opacity: 0.55; transform: scale(1)    rotate(0deg); }
 }
+
+/* Glassmorphism Design Utilities */
+.glass-panel {
+  background: rgba(76, 53, 73, 0.48);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-panel-subtle {
+  background: rgba(42, 29, 38, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.25);
+}
+
+.glass-panel-interactive {
+  background: rgba(76, 53, 73, 0.42);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel-interactive:hover {
+  background: rgba(136, 57, 85, 0.38);
+  border-color: rgba(255, 112, 153, 0.45);
+  box-shadow: 0 12px 40px 0 rgba(255, 62, 65, 0.22);
+}
+
