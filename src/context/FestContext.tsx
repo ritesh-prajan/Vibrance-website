@@ -142,7 +142,12 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const saved = localStorage.getItem(STORAGE_KEYS.EVENTS);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed: FestEvent[] = JSON.parse(saved);
+        const missing = INITIAL_EVENTS.filter((ie) => !parsed.some((pe) => pe.id === ie.id));
+        if (missing.length > 0) {
+          return [...parsed, ...missing];
+        }
+        return parsed;
       } catch {
         return INITIAL_EVENTS;
       }
@@ -159,7 +164,12 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const saved = localStorage.getItem(STORAGE_KEYS.BOOKINGS);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed: Booking[] = JSON.parse(saved);
+        const missing = INITIAL_BOOKINGS.filter((ib) => !parsed.some((pb) => pb.id === ib.id));
+        if (missing.length > 0) {
+          return [...parsed, ...missing];
+        }
+        return parsed;
       } catch {
         return INITIAL_BOOKINGS;
       }

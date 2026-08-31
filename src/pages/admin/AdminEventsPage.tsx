@@ -39,6 +39,10 @@ const TICKET_BG_PRESETS = [
     url: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=1000&auto=format&fit=crop&q=80',
   },
   {
+    name: 'Cyberquest (SCOPE)',
+    url: '/cyberquest-ticket.png',
+  },
+  {
     name: 'Tech Matrix',
     url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1000&auto=format&fit=crop&q=80',
   },
