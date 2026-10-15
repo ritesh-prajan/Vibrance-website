@@ -60,25 +60,7 @@ public class AuthService {
                     new UsernamePasswordAuthenticationToken(regNumber, rawPassword)
             );
         } catch (AuthenticationException e) {
-            // Check if this is a seeded demo persona needing credential synchronization (vibrance2026 vs password123)
-            User user = userRepository.findByRegNumber(regNumber)
-                    .or(() -> userRepository.findByEmail(regNumber))
-                    .orElse(null);
-
-            if (user != null && ("vibrance2026".equals(rawPassword) || "password123".equals(rawPassword))) {
-                user.setPasswordHash(passwordEncoder.encode(rawPassword));
-                userRepository.save(user);
-                try {
-                    authentication = authenticationManager.authenticate(
-                            new UsernamePasswordAuthenticationToken(regNumber, rawPassword)
-                    );
-                } catch (AuthenticationException ex) {
-                    throw new UnauthorizedException("Invalid registration number or password");
-                }
-            } else {
-                // Reject unknown accounts or wrong passwords consistently without leaking account existence
-                throw new UnauthorizedException("Invalid registration number or password");
-            }
+            throw new UnauthorizedException("Invalid registration number or password");
         }
 
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();

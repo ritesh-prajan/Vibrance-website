@@ -87,4 +87,19 @@ public class SecurityAccessTest {
         mockMvc.perform(get("/api/v1/events"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    @DisplayName("9. Anonymous access to /api/v1/auth/persona/{regNumber} returns 401 Unauthorized")
+    void testAnonymousAccessToPersonaReturns401() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/persona/RA2111003010142"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(username = "student_user", roles = {"STUDENT"})
+    @DisplayName("10. STUDENT access to /api/v1/auth/persona/{regNumber} returns 403 Forbidden")
+    void testStudentAccessToPersonaReturns403() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/persona/RA2111003010142"))
+                .andExpect(status().isForbidden());
+    }
 }

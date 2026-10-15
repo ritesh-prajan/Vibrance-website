@@ -80,7 +80,6 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/register",
-                                "/api/v1/auth/persona/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/api-docs/**",
@@ -104,6 +103,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/events/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/auth/users").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/auth/users/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/auth/persona/**").hasRole("ADMIN")
 
                         // 5. Authenticated Student / Ticketing Operations
                         .requestMatchers("/api/v1/auth/me").authenticated()

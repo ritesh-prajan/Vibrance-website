@@ -22,7 +22,7 @@
 | `POST` | `/api/v1/auth/login` | Public | Authenticates user via email/regNo and password. | `AuthDTO.LoginRequest` | `AuthDTO.AuthResponse` | `200 OK`, `400 Bad Request`, `401 Unauthorized` |
 | `POST` | `/api/v1/auth/register` | Public | Registers a new attendee account (strictly `student` role). Rejects escalation attempts. | `AuthDTO.RegisterRequest` | `AuthDTO.AuthResponse` | `201 Created`, `400 Bad Request`, `409 Conflict` |
 | `GET` | `/api/v1/auth/me` | `ROLE_STUDENT`, `ROLE_GATE_STAFF`, `ROLE_ADMIN` | Retrieves active user profile extracted from JWT claims. | None | `UserDTO` | `200 OK`, `401 Unauthorized` |
-| `GET` | `/api/v1/auth/persona/{regNumber}` | Public | Retrieves seeded persona credentials and metadata for demo quick-switching. | Path variable `regNumber` | `UserDTO` | `200 OK`, `404 Not Found` |
+| `GET` | `/api/v1/auth/persona/{regNumber}` | `ROLE_ADMIN` | Retrieves seeded persona credentials and metadata for demo quick-switching. Restricted to administrators to prevent public enumeration. | Path variable `regNumber` | `UserDTO` | `200 OK`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found` |
 | `GET` | `/api/v1/auth/users` | `ROLE_ADMIN` | Retrieves all registered festival users across all roles. | None | `List<UserDTO>` | `200 OK`, `401 Unauthorized`, `403 Forbidden` |
 | `DELETE` | `/api/v1/auth/users/{id}` | `ROLE_ADMIN` | Deletes a user account from database. | Path variable `id` (UUID) | `ApiResponse<Void>` | `200 OK`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found` |
 

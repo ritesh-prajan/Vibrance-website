@@ -18,17 +18,30 @@ public class JwtTokenProvider {
 
     private static final Logger log = LoggerFactory.getLogger(JwtTokenProvider.class);
 
+    @Value("${spring.profiles.active:dev}")
+    private String activeProfile;
+
     @Value("${app.jwt.secret:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}")
     private String jwtSecret;
 
     @Value("${app.jwt.expiration-ms:86400000}")
     private long jwtExpirationMs;
 
+    private static final String DEFAULT_DEV_SECRET = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
+
     @jakarta.annotation.PostConstruct
     public void validateKeyConfiguration() {
         if (jwtSecret == null || jwtSecret.trim().isEmpty()) {
             throw new IllegalStateException("FATAL: JWT signing secret (app.jwt.secret) must not be empty");
         }
+
+        // Production profile must not use the hardcoded development secret
+        if ("prod".equalsIgnoreCase(activeProfile) || "production".equalsIgnoreCase(activeProfile)) {
+            if (DEFAULT_DEV_SECRET.equals(jwtSecret)) {
+                throw new IllegalStateException("CRITICAL SECURITY ERROR: The hardcoded development secret cannot be used in production profile. Set JWT_SECRET in environment.");
+            }
+        }
+
         byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
         if (keyBytes.length < 32) {
             throw new IllegalStateException("FATAL: JWT secret key must be at least 256 bits (32 bytes) for HMAC-SHA256");

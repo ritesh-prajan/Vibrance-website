@@ -87,15 +87,15 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("2. Login with Incorrect Password throws UnauthorizedException")
+    @DisplayName("2. Login with Incorrect Password throws UnauthorizedException and never modifies password")
     void testLoginWithIncorrectPassword() {
         AuthDTO.LoginRequest req = new AuthDTO.LoginRequest("RA2111003010142", "wrongPassword");
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new BadCredentialsException("Bad credentials"));
-        when(userRepository.findByRegNumber("RA2111003010142")).thenReturn(Optional.of(sampleUser));
 
         assertThrows(UnauthorizedException.class, () -> authService.login(req));
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
@@ -105,7 +105,6 @@ class AuthServiceTest {
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new BadCredentialsException("User not found"));
-        when(userRepository.findByRegNumber("UNKNOWN_USER_999")).thenReturn(Optional.empty());
 
         assertThrows(UnauthorizedException.class, () -> authService.login(req));
         verify(userRepository, never()).save(any(User.class));

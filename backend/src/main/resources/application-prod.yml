@@ -1,0 +1,29 @@
+# ==============================================================================
+# Production Configuration (Active when SPRING_PROFILES_ACTIVE=prod)
+# Strictly requires environment variables; no default passwords or fallback keys.
+# ==============================================================================
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: vibrance-backend-prod
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+    locations: classpath:db/migration
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
