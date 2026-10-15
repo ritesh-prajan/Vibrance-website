@@ -28,7 +28,7 @@ export const SeatPickerModal: React.FC<SeatPickerModalProps> = ({
 
   if (!isOpen || !event) return null;
 
-  const handleSeatClick = (seat: Seat) => {
+  const handleSeatClick = async (seat: Seat) => {
     setErrorMessage(null);
 
     if (seat.status === 'booked') {
@@ -45,12 +45,12 @@ export const SeatPickerModal: React.FC<SeatPickerModalProps> = ({
 
     if (seat.status === 'selected' && activeSeat?.id === seat.id) {
       // Toggle off / release
-      releaseActiveSeat();
+      await releaseActiveSeat();
       return;
     }
 
     // Attempt to acquire exclusive hold
-    const success = selectSeatForBooking(event, seat);
+    const success = await selectSeatForBooking(event, seat);
     if (!success) {
       setErrorMessage('Failed to acquire lock. Seat status changed concurrently.');
     }

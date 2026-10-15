@@ -25,7 +25,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  const confirmedBookingsCount = myBookings.filter((b) => b.status === 'CONFIRMED').length;
+  const confirmedBookingsCount = myBookings.filter((b) => b.status === 'CONFIRMED' || b.status === 'confirmed').length;
   const isAdmin = currentUser?.role === 'ADMIN';
 
   return (

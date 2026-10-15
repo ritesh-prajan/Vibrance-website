@@ -13,8 +13,8 @@ export const MyBookingsView: React.FC<MyBookingsViewProps> = ({ onBrowseEvents }
   const [selectedPass, setSelectedPass] = useState<Booking | null>(null);
   const [cancelModalBooking, setCancelModalBooking] = useState<Booking | null>(null);
 
-  const confirmedBookings = myBookings.filter((b) => b.status === 'CONFIRMED');
-  const cancelledBookings = myBookings.filter((b) => b.status === 'CANCELLED');
+  const confirmedBookings = myBookings.filter((b) => b.status === 'CONFIRMED' || b.status === 'confirmed');
+  const cancelledBookings = myBookings.filter((b) => b.status === 'CANCELLED' || b.status === 'cancelled');
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">

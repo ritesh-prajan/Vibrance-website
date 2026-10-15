@@ -1,4 +1,4 @@
-export type UserRole = 'student' | 'admin' | 'gate_staff';
+export type UserRole = 'student' | 'admin' | 'gate_staff' | 'STUDENT' | 'ADMIN' | 'GATE_STAFF';
 
 export interface UserProfile {
   id: string;
@@ -15,7 +15,7 @@ export type StudentProfile = UserProfile;
 export type GateStaffProfile = UserProfile;
 export type AdminProfile = UserProfile;
 
-export type BookingStatus = 'confirmed' | 'cancelled' | 'checked_in';
+export type BookingStatus = 'confirmed' | 'cancelled' | 'checked_in' | 'CONFIRMED' | 'CANCELLED' | 'CHECKED_IN';
 export type LockStatus = 'available' | 'selected' | 'locked' | 'booked';
 export type ScanResultStatus = 'VALID' | 'ALREADY_USED' | 'INVALID' | 'EXPIRED';
 
@@ -85,7 +85,7 @@ export interface Booking {
   bookedAt: number;
   qrPayload: string;
   ticketBgImage?: string;
-  status: 'confirmed' | 'cancelled' | 'checked_in';
+  status: BookingStatus;
   checkedInAt?: number;
   checkedInBy?: {
     name: string;
@@ -174,7 +174,9 @@ export interface AuditLog {
   seatLabel?: string;
   userName: string;
   regNumber: string;
-  status: 'SUCCESS' | 'CONFLICT' | 'REJECTED' | 'INVALID' | 'RELEASED' | 'DUPLICATE' | 'EXPIRED';
+  status: 'SUCCESS' | 'CONFLICT' | 'REJECTED' | 'INVALID' | 'RELEASED' | 'DUPLICATE' | 'EXPIRED' | 'ANOMALY_OVERBOOK' | string;
   details: string;
   protocol?: string;
+  user?: string;
+  resourceId?: string;
 }

@@ -98,11 +98,11 @@ export const AdminEventsPage: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleCreateEvent = (e: React.FormEvent) => {
+  const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
-    addEvent({
+    await addEvent({
       title: title.trim(),
       category,
       artistOrHost: artist.trim() || 'Special Guest Artists',
@@ -120,11 +120,11 @@ export const AdminEventsPage: React.FC = () => {
     resetForm();
   };
 
-  const handleUpdateEvent = (e: React.FormEvent) => {
+  const handleUpdateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingEvent) return;
 
-    updateEvent({
+    await updateEvent({
       ...editingEvent,
       title: title.trim(),
       category,
@@ -142,9 +142,9 @@ export const AdminEventsPage: React.FC = () => {
     resetForm();
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!deletingEvent) return;
-    deleteEvent(deletingEvent.id);
+    await deleteEvent(deletingEvent.id);
     setDeletingEvent(null);
   };
 

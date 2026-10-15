@@ -47,4 +47,17 @@ public class AuthController {
     public ResponseEntity<ApiResponse<UserDTO>> getPersonaByRegNumber(@PathVariable String regNumber) {
         return ResponseEntity.ok(ApiResponse.success(authService.getUserByRegNumber(regNumber)));
     }
+
+    @GetMapping("/users")
+    @Operation(summary = "Get all users in festival registry (Admin/Staff)")
+    public ResponseEntity<ApiResponse<java.util.List<UserDTO>>> getAllUsers() {
+        return ResponseEntity.ok(ApiResponse.success(authService.getAllUsers()));
+    }
+
+    @DeleteMapping("/users/{id}")
+    @Operation(summary = "Delete user account (Admin only)")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable java.util.UUID id) {
+        authService.deleteUser(id);
+        return ResponseEntity.ok(ApiResponse.ok("User deleted successfully", null));
+    }
 }

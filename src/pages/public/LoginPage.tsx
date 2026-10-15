@@ -28,29 +28,33 @@ export const LoginPage: React.FC = () => {
   const [customDept, setCustomDept] = useState('');
   const [pendingSelect, setPendingSelect] = useState<string | null>(null);
 
-  const handleQuickProfileLogin = (
+  const handleQuickProfileLogin = async (
     profile: StudentProfile | GateStaffProfile | AdminProfile,
     role: UserRole
   ) => {
     setPendingSelect(profile.id);
-    setTimeout(() => {
+    try {
       if (role === 'student') {
         const s = profile as StudentProfile;
-        loginAsStudent(s.name, s.regNumber, s.department, s.year);
+        await loginAsStudent(s.name, s.regNumber, s.department, s.year);
         navigate('/events', { replace: true });
       } else if (role === 'gate_staff') {
         const g = profile as GateStaffProfile;
-        loginAsGateStaff(g.name, g.regNumber, g.department);
+        await loginAsGateStaff(g.name, g.regNumber, g.department);
         navigate('/verify', { replace: true });
       } else if (role === 'admin') {
         const a = profile as AdminProfile;
-        loginAsAdmin(a.name, a.regNumber, a.department);
+        await loginAsAdmin(a.name, a.regNumber, a.department);
         navigate('/admin', { replace: true });
       }
-    }, 180);
+    } catch (err) {
+      console.error('Quick profile login failed:', err);
+    } finally {
+      setPendingSelect(null);
+    }
   };
 
-  const handleCustomLogin = (e: React.FormEvent) => {
+  const handleCustomLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const name =
       customName.trim() ||
@@ -67,15 +71,19 @@ export const LoginPage: React.FC = () => {
         ? 'STAFF-001'
         : 'ADMIN-SYS');
 
-    if (selectedRole === 'student') {
-      loginAsStudent(name, identifier, customDept || 'SCOPE');
-      navigate('/events', { replace: true });
-    } else if (selectedRole === 'gate_staff') {
-      loginAsGateStaff(name, identifier, customDept || 'Security');
-      navigate('/verify', { replace: true });
-    } else {
-      loginAsAdmin(name, identifier, customDept || 'Fest Operations');
-      navigate('/admin', { replace: true });
+    try {
+      if (selectedRole === 'student') {
+        await loginAsStudent(name, identifier, customDept || 'SCOPE');
+        navigate('/events', { replace: true });
+      } else if (selectedRole === 'gate_staff') {
+        await loginAsGateStaff(name, identifier, customDept || 'Security');
+        navigate('/verify', { replace: true });
+      } else {
+        await loginAsAdmin(name, identifier, customDept || 'Fest Operations');
+        navigate('/admin', { replace: true });
+      }
+    } catch (err) {
+      console.error('Custom login failed:', err);
     }
   };
 

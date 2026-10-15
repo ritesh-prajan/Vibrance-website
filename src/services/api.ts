@@ -95,6 +95,7 @@ export interface SeatDTO {
   status: 'available' | 'locked' | 'booked';
   lockedBy?: { userId: string; userName: string; regNumber: string };
   lockExpiresAt?: number;
+  bookedBy?: { userId: string; userName: string; regNumber: string; bookingRef?: string };
   version: number;
 }
 
@@ -119,7 +120,7 @@ export interface BookingDTO {
   bookedAt: number;
   qrPayload: string;
   ticketBgImage?: string;
-  status: 'confirmed' | 'cancelled' | 'checked_in';
+  status: 'confirmed' | 'cancelled' | 'checked_in' | 'CONFIRMED' | 'CANCELLED' | 'CHECKED_IN';
   checkedInAt?: number;
   checkedInBy?: { name: string; staffId: string };
   startTimestamp: number;
@@ -203,8 +204,8 @@ export interface ConcurrencyRunResultDTO {
 
 // ─── Auth Endpoints ───────────────────────────────────────────────────────────
 export const authApi = {
-  login: (regNumber: string, password?: string) =>
-    post<ApiResponse<AuthResponse>>('/auth/login', { regNumber, password }),
+  login: (regNumber: string, password?: string, role?: string, name?: string, department?: string) =>
+    post<ApiResponse<AuthResponse>>('/auth/login', { regNumber, password, role, name, department }),
 
   register: (data: {
     regNumber: string; name: string; email: string;
@@ -215,6 +216,10 @@ export const authApi = {
 
   persona: (regNumber: string) =>
     get<ApiResponse<UserDTO>>(`/auth/persona/${encodeURIComponent(regNumber)}`),
+
+  getAllUsers: () => get<ApiResponse<UserDTO[]>>('/auth/users'),
+
+  deleteUser: (id: string) => del<ApiResponse<void>>(`/auth/users/${id}`),
 };
 
 // ─── Events Endpoints ──────────────────────────────────────────────────────────

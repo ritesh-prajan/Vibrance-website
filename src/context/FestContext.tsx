@@ -13,35 +13,197 @@ import {
   ConcurrencyStrategy,
 } from '../types';
 import {
-  INITIAL_EVENTS,
-  INITIAL_BOOKINGS,
-  INITIAL_AUDIT_LOGS,
-  INITIAL_SCAN_HISTORY,
-  MOCK_STUDENT_PROFILES,
-  MOCK_STAFF_PROFILES,
-  MOCK_ADMIN_PROFILES,
-  generateSeatsForEvent,
-} from '../data/mockEvents';
-import { getEventTiming } from '../utils/timeUtils';
-import { useBackendSync, mapEventDTOtoFestEvent } from '../hooks/useBackendSync';
+  authApi,
+  eventsApi,
+  seatsApi,
+  bookingsApi,
+  scansApi,
+  auditApi,
+  concurrencyApi,
+  getToken,
+  setToken,
+  clearToken,
+  type EventDTO,
+  type SeatDTO,
+  type BookingDTO,
+  type ScanResultDTO,
+  type AuditLogDTO,
+  type ConcurrencyRunResultDTO,
+  type UserDTO,
+} from '../services/api';
 
+// ─── DTO → UI Domain Model Mappers ───────────────────────────────────────────
 
-const STORAGE_KEYS = {
-  USER: 'vibrance26_current_user',
-  USERS: 'vibrance26_users_v6',
-  EVENTS: 'vibrance26_events_v6',
-  BOOKINGS: 'vibrance26_bookings_v6',
-  LOGS: 'vibrance26_audit_logs_v6',
-  SCANS: 'vibrance26_scan_history_v6',
-  SIM_HISTORY: 'vibrance26_sim_history_v6',
-};
+export function mapUserDTOtoUserProfile(u: UserDTO): UserProfile {
+  return {
+    id: u.id,
+    name: u.name,
+    regNumber: u.regNumber,
+    email: u.email,
+    role: (u.role.toLowerCase() as UserRole) || 'student',
+    department: u.department || 'General',
+    year: u.yearOfStudy || '3rd Year (B.Tech)',
+    avatarSeed: u.avatarSeed || u.name.toLowerCase().split(' ')[0],
+  };
+}
+
+export function mapSeatDTOtoSeat(s: SeatDTO): Seat {
+  return {
+    id: s.id,
+    row: s.row,
+    number: s.number,
+    category: s.category as 'VIP_FRONT' | 'GOLD' | 'REGULAR',
+    price: s.price,
+    status: s.status as 'available' | 'selected' | 'locked' | 'booked',
+    lockedBy: s.lockedBy ? {
+      userId: s.lockedBy.userId,
+      userName: s.lockedBy.userName,
+      regNumber: s.lockedBy.regNumber,
+    } : undefined,
+    lockExpiresAt: s.lockExpiresAt ? new Date(s.lockExpiresAt).getTime() : undefined,
+    bookedBy: s.bookedBy ? {
+      userId: s.bookedBy.userId,
+      userName: s.bookedBy.userName,
+      regNumber: s.bookedBy.regNumber,
+      bookingRef: s.bookedBy.bookingRef,
+    } : undefined,
+  };
+}
+
+export function mapEventDTOtoFestEvent(e: EventDTO): FestEvent {
+  const seats = (e.seats || []).map(mapSeatDTOtoSeat);
+  return {
+    id: e.id,
+    title: e.title,
+    category: e.category as EventCategory,
+    artistOrHost: e.artistOrHost,
+    date: e.date,
+    time: e.time,
+    venue: e.venue,
+    basePrice: e.basePrice,
+    totalSeats: e.totalSeats,
+    availableSeats: e.availableSeats,
+    lockedSeatsCount: e.lockedSeatsCount,
+    bookedSeatsCount: e.bookedSeatsCount,
+    accentColor: e.accentColor,
+    tag: e.tag || 'FESTIVAL SHOWCASE',
+    shortDesc: e.shortDesc || '',
+    ticketBgImage: e.ticketBgImage,
+    seats,
+    startTimestamp: e.startTimestamp ? new Date(e.startTimestamp).getTime() : undefined,
+    endTimestamp: e.endTimestamp ? new Date(e.endTimestamp).getTime() : undefined,
+  };
+}
+
+export function mapBookingDTOtoBooking(b: BookingDTO): Booking {
+  return {
+    id: b.id,
+    bookingRef: b.bookingRef,
+    eventId: b.eventId,
+    eventTitle: b.eventTitle,
+    eventCategory: b.eventCategory as EventCategory,
+    artistOrHost: b.artistOrHost,
+    eventDate: b.eventDate,
+    eventTime: b.eventTime,
+    eventVenue: b.eventVenue,
+    seatId: b.seatId,
+    seatLabel: b.seatLabel,
+    seatCategory: b.seatCategory,
+    studentName: b.studentName,
+    regNumber: b.regNumber,
+    department: b.department,
+    amount: b.amount,
+    paymentMethod: (b.paymentMethod as 'UPI' | 'CAMPUS_CARD' | 'NET_BANKING') || 'UPI',
+    bookedAt: b.bookedAt ? new Date(b.bookedAt).getTime() : Date.now(),
+    qrPayload: b.qrPayload,
+    ticketBgImage: b.ticketBgImage,
+    status: b.status,
+    checkedInAt: b.checkedInAt ? new Date(b.checkedInAt).getTime() : undefined,
+    checkedInBy: b.checkedInBy,
+    startTimestamp: b.startTimestamp ? new Date(b.startTimestamp).getTime() : undefined,
+    endTimestamp: b.endTimestamp ? new Date(b.endTimestamp).getTime() : undefined,
+  };
+}
+
+export function mapScanDTOtoScanRecord(s: ScanResultDTO): ScanRecord {
+  return {
+    id: s.id,
+    timestamp: s.timestamp ? new Date(s.timestamp).getTime() : Date.now(),
+    query: s.query,
+    result: s.result,
+    staffMember: s.staffMember || { name: 'Gate Officer', staffId: 'GATE-01' },
+    bookingId: s.bookingId,
+    bookingRef: s.bookingRef,
+    eventTitle: s.eventTitle,
+    attendeeName: s.attendeeName,
+    seatLabel: s.seatLabel,
+    message: s.message,
+    originalCheckedInAt: s.originalCheckedInAt ? new Date(s.originalCheckedInAt).getTime() : undefined,
+    originalCheckedInBy: s.originalCheckedInBy,
+  };
+}
+
+export function mapAuditLogDTOtoAuditLog(a: AuditLogDTO): AuditLog {
+  const userName = a.userName || 'Anonymous';
+  const resourceId = a.seatLabel ? `${a.eventTitle || 'Event'} (${a.seatLabel})` : (a.eventTitle || a.eventId || 'System');
+  return {
+    id: a.id,
+    timestamp: a.timestamp ? new Date(a.timestamp).getTime() : Date.now(),
+    action: a.action as any,
+    eventId: a.eventId || 'SYSTEM',
+    eventTitle: a.eventTitle || 'Vibrance Central Registry',
+    seatLabel: a.seatLabel,
+    userName,
+    regNumber: a.regNumber || 'ANON',
+    status: (a.status as any) || 'SUCCESS',
+    details: a.details || '',
+    protocol: a.protocol,
+    user: userName,
+    resourceId,
+  };
+}
+
+export function mapConcurrencyDTOtoRunResult(c: ConcurrencyRunResultDTO): ConcurrencyRunResult {
+  return {
+    runId: c.runId,
+    strategy: c.strategy as ConcurrencyStrategy,
+    targetEventId: c.targetEventId,
+    targetEventTitle: c.targetEventTitle,
+    concurrencyLevel: c.concurrencyLevel,
+    successfulCount: c.successfulCount,
+    rejectedCount: c.rejectedCount,
+    deadlockCount: c.deadlockCount,
+    initialStock: c.initialStock,
+    finalStock: c.finalStock,
+    durationMs: c.durationMs,
+    overbookingDetected: c.overbookingDetected,
+    overbookedSeats: c.overbookedSeats,
+    transactions: (c.transactions || []).map((t) => ({
+      txId: t.txId,
+      clientId: t.clientId,
+      clientName: t.clientName,
+      status: t.status as any,
+      currentStep: t.currentStep,
+      timestamp: t.timestamp ? new Date(t.timestamp).getTime() : Date.now(),
+      latencyMs: t.latencyMs,
+      seatClaimed: t.seatClaimed,
+      message: t.message,
+    })),
+    dbLogs: c.dbLogs || [],
+  };
+}
+
+// ─── Context Interface ────────────────────────────────────────────────────────
 
 interface FestContextType {
   currentUser: UserProfile | null;
-  loginAsStudent: (name?: string, regNumber?: string, dept?: string, year?: string) => void;
-  loginAsGateStaff: (name?: string, regNumber?: string, dept?: string) => void;
-  loginAsAdmin: (name?: string, regNumber?: string, dept?: string) => void;
+  loginAsStudent: (name?: string, regNumber?: string, dept?: string, year?: string) => Promise<void>;
+  loginAsGateStaff: (name?: string, regNumber?: string, dept?: string) => Promise<void>;
+  loginAsAdmin: (name?: string, regNumber?: string, dept?: string) => Promise<void>;
+  login: (regNumber: string, password?: string) => Promise<UserProfile | null>;
   logout: () => void;
+  switchRole: (role: UserRole) => Promise<void>;
+  updateProfile: (profile: Partial<UserProfile>) => void;
 
   users: UserProfile[];
   addUser: (userData: {
@@ -51,8 +213,8 @@ interface FestContextType {
     role: UserRole;
     department: string;
     year?: string;
-  }) => UserProfile;
-  deleteUser: (userId: string) => void;
+  }) => Promise<UserProfile | null>;
+  deleteUser: (userId: string) => Promise<void>;
 
   events: FestEvent[];
   selectedEvent: FestEvent | null;
@@ -70,15 +232,15 @@ interface FestContextType {
     ticketBgImage?: string;
     totalSeats?: number;
     startOffsetHours?: number;
-  }) => FestEvent;
-  updateEvent: (updatedEvent: FestEvent) => void;
-  deleteEvent: (eventId: string) => void;
+  }) => Promise<FestEvent | null>;
+  updateEvent: (updatedEvent: FestEvent) => Promise<void>;
+  deleteEvent: (eventId: string) => Promise<void>;
 
   activeSeat: Seat | null;
   activeSeatEventId: string | null;
   seatLockTimeRemaining: number;
-  selectSeatForBooking: (event: FestEvent, seat: Seat) => boolean;
-  releaseActiveSeat: () => void;
+  selectSeatForBooking: (event: FestEvent, seat: Seat) => Promise<boolean>;
+  releaseActiveSeat: () => Promise<void>;
 
   allBookings: Booking[];
   myBookings: Booking[];
@@ -88,13 +250,14 @@ interface FestContextType {
     department: string;
     paymentMethod: 'UPI' | 'CAMPUS_CARD' | 'NET_BANKING';
   }) => Promise<Booking | null>;
-  cancelBooking: (bookingId: string) => boolean;
+  cancelBooking: (bookingId: string) => Promise<boolean>;
 
   scanHistory: ScanRecord[];
-  verifyTicket: (query: string, staff: { name: string; staffId: string }) => ScanRecord;
+  clearScanHistory: () => void;
+  verifyTicket: (query: string, staff: { name: string; staffId: string }) => Promise<ScanRecord>;
 
   auditLogs: AuditLog[];
-  clearAuditLogs: () => void;
+  clearAuditLogs: () => Promise<void>;
 
   isSimulating: boolean;
   simulationProgress: number;
@@ -105,455 +268,371 @@ interface FestContextType {
     strategy: ConcurrencyStrategy;
     concurrencyLevel: number;
     targetEventId: string;
+    speedMs?: number;
   }) => Promise<ConcurrencyRunResult>;
   runSideBySideSimulation: (params: {
     concurrencyLevel: number;
     targetEventId: string;
   }) => Promise<SideBySideRunResult>;
-  resetDatabaseState: () => void;
+  resetDatabaseState: () => Promise<void>;
 }
 
 const FestContext = createContext<FestContextType | undefined>(undefined);
 
-export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // ── Backend sync (non-blocking, graceful fallback) ─────────────────────────
-  const backendSync = useBackendSync();
+// ─── Provider Implementation ──────────────────────────────────────────────────
 
+export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
 
-  const [users, setUsers] = useState<UserProfile[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.USERS);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return [...MOCK_STUDENT_PROFILES, ...MOCK_STAFF_PROFILES, ...MOCK_ADMIN_PROFILES];
-      }
-    }
-    return [...MOCK_STUDENT_PROFILES, ...MOCK_STAFF_PROFILES, ...MOCK_ADMIN_PROFILES];
-  });
-
-  const [events, setEvents] = useState<FestEvent[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.EVENTS);
-    if (saved) {
-      try {
-        const parsed: FestEvent[] = JSON.parse(saved);
-        const missing = INITIAL_EVENTS.filter((ie) => !parsed.some((pe) => pe.id === ie.id));
-        if (missing.length > 0) {
-          return [...parsed, ...missing];
-        }
-        return parsed;
-      } catch {
-        return INITIAL_EVENTS;
-      }
-    }
-    return INITIAL_EVENTS;
-  });
-
+  const [events, setEvents] = useState<FestEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<FestEvent | null>(null);
+
   const [activeSeat, setActiveSeat] = useState<Seat | null>(null);
   const [activeSeatEventId, setActiveSeatEventId] = useState<string | null>(null);
   const [seatLockTimeRemaining, setSeatLockTimeRemaining] = useState<number>(0);
 
-  const [allBookings, setAllBookings] = useState<Booking[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.BOOKINGS);
-    if (saved) {
-      try {
-        const parsed: Booking[] = JSON.parse(saved);
-        const missing = INITIAL_BOOKINGS.filter((ib) => !parsed.some((pb) => pb.id === ib.id));
-        if (missing.length > 0) {
-          return [...parsed, ...missing];
-        }
-        return parsed;
-      } catch {
-        return INITIAL_BOOKINGS;
-      }
-    }
-    return INITIAL_BOOKINGS;
-  });
+  const [allBookings, setAllBookings] = useState<Booking[]>([]);
+  const [myBookings, setMyBookings] = useState<Booking[]>([]);
 
-  const [scanHistory, setScanHistory] = useState<ScanRecord[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.SCANS);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return INITIAL_SCAN_HISTORY;
-      }
-    }
-    return INITIAL_SCAN_HISTORY;
-  });
-
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.LOGS);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return INITIAL_AUDIT_LOGS;
-      }
-    }
-    return INITIAL_AUDIT_LOGS;
-  });
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [scanHistory, setScanHistory] = useState<ScanRecord[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
 
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [simulationProgress, setSimulationProgress] = useState<number>(0);
   const [lastSimResult, setLastSimResult] = useState<ConcurrencyRunResult | null>(null);
   const [lastSideBySideResult, setLastSideBySideResult] = useState<SideBySideRunResult | null>(null);
-  const [simHistory, setSimHistory] = useState<ConcurrencyRunResult[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.SIM_HISTORY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return [];
+  const [simHistory, setSimHistory] = useState<ConcurrencyRunResult[]>([]);
+
+  // ── 1. Fetch Events from Backend ───────────────────────────────────────────
+  const refreshEvents = useCallback(async () => {
+    try {
+      const res = await eventsApi.getAll();
+      if (res.success && res.data) {
+        setEvents(res.data.map(mapEventDTOtoFestEvent));
       }
+    } catch (err) {
+      console.warn('[FestContext] Failed fetching events from database:', err);
     }
-    return [];
-  });
-
-  const myBookings = allBookings.filter((b) => {
-    if (!currentUser) return false;
-    return (
-      b.regNumber.toLowerCase() === currentUser.regNumber.toLowerCase() ||
-      b.studentName.toLowerCase() === currentUser.name.toLowerCase()
-    );
-  });
-
-  useEffect(() => {
-    if (currentUser) localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(currentUser));
-  }, [currentUser]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(allBookings));
-  }, [allBookings]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
-  }, [events]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(auditLogs));
-  }, [auditLogs]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.SCANS, JSON.stringify(scanHistory));
-  }, [scanHistory]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-  }, [users]);
-
-  const addAuditLog = useCallback((log: Omit<AuditLog, 'id' | 'timestamp'>) => {
-    const newEntry: AuditLog = {
-      ...log,
-      id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      timestamp: Date.now(),
-    };
-    setAuditLogs((prev) => [newEntry, ...prev.slice(0, 200)]);
   }, []);
 
-  // ── Sync backend events into local state ─────────────────────────────────────
-  useEffect(() => {
-    if (backendSync.liveEvents && backendSync.liveEvents.length > 0) {
-      setEvents((prev) => {
-        const backendMapped = backendSync.liveEvents!.map(
-          (e) => mapEventDTOtoFestEvent(e) as unknown as FestEvent
-        );
-        // Merge: prefer backend events (real DB), keep any local-only events
-        const backendIds = new Set(backendMapped.map((e) => e.id));
-        const localOnly = prev.filter((e) => !backendIds.has(e.id));
-        return [...backendMapped, ...localOnly];
-      });
-    }
-  }, [backendSync.liveEvents]);
-
-  // Live Timer countdown for held seats
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now();
-      if (activeSeat && activeSeat.lockExpiresAt) {
-        const remaining = Math.max(0, Math.ceil((activeSeat.lockExpiresAt - now) / 1000));
-        setSeatLockTimeRemaining(remaining);
-        if (remaining === 0) {
-          releaseActiveSeat();
+  // ── 2. Role-specific Data Fetchers ─────────────────────────────────────────
+  const refreshBookings = useCallback(async (role?: UserRole) => {
+    try {
+      const activeRole = role || currentUser?.role;
+      if (activeRole === 'student') {
+        const res = await bookingsApi.getMyBookings();
+        if (res.success && res.data) {
+          setMyBookings(res.data.map(mapBookingDTOtoBooking));
+        }
+      } else if (activeRole === 'admin') {
+        const [myRes, allRes] = await Promise.allSettled([
+          bookingsApi.getMyBookings(),
+          bookingsApi.getAllBookings(),
+        ]);
+        if (myRes.status === 'fulfilled' && myRes.value.success && myRes.value.data) {
+          setMyBookings(myRes.value.data.map(mapBookingDTOtoBooking));
+        }
+        if (allRes.status === 'fulfilled' && allRes.value.success && allRes.value.data) {
+          setAllBookings(allRes.value.data.map(mapBookingDTOtoBooking));
         }
       }
+    } catch (err) {
+      console.warn('[FestContext] Failed fetching bookings from database:', err);
+    }
+  }, [currentUser?.role]);
+
+  const refreshScanHistory = useCallback(async () => {
+    try {
+      const res = await scansApi.getRecent();
+      if (res.success && res.data) {
+        setScanHistory(res.data.map(mapScanDTOtoScanRecord));
+      }
+    } catch (err) {
+      console.warn('[FestContext] Failed fetching scan telemetry:', err);
+    }
+  }, []);
+
+  const refreshAuditLogs = useCallback(async () => {
+    try {
+      const res = await auditApi.getLogs();
+      if (res.success && res.data) {
+        setAuditLogs(res.data.map(mapAuditLogDTOtoAuditLog));
+      }
+    } catch (err) {
+      console.warn('[FestContext] Failed fetching audit logs:', err);
+    }
+  }, []);
+
+  const refreshUsers = useCallback(async () => {
+    try {
+      const res = await authApi.getAllUsers();
+      if (res.success && res.data) {
+        setUsers(res.data.map(mapUserDTOtoUserProfile));
+      }
+    } catch (err) {
+      console.warn('[FestContext] Failed fetching user registry:', err);
+    }
+  }, []);
+
+  const loadUserData = useCallback(async (profile: UserProfile) => {
+    if (profile.role === 'student') {
+      await refreshBookings('student');
+    } else if (profile.role === 'gate_staff') {
+      await refreshScanHistory();
+    } else if (profile.role === 'admin') {
+      await Promise.allSettled([
+        refreshBookings('admin'),
+        refreshScanHistory(),
+        refreshAuditLogs(),
+        refreshUsers(),
+      ]);
+    }
+  }, [refreshBookings, refreshScanHistory, refreshAuditLogs, refreshUsers]);
+
+  // ── 3. App Mount: Validate Token & Load Database ───────────────────────────
+  useEffect(() => {
+    let mounted = true;
+
+    async function init() {
+      // Load events catalog from PostgreSQL
+      try {
+        const res = await eventsApi.getAll();
+        if (mounted && res.success && res.data) {
+          setEvents(res.data.map(mapEventDTOtoFestEvent));
+        }
+      } catch (err) {
+        console.warn('[FestContext] Initial event fetch failed:', err);
+      }
+
+      // Validate session if JWT token exists
+      const token = getToken();
+      if (token) {
+        try {
+          const meRes = await authApi.me();
+          if (mounted && meRes.success && meRes.data) {
+            const profile = mapUserDTOtoUserProfile(meRes.data);
+            setCurrentUser(profile);
+            loadUserData(profile);
+          } else {
+            clearToken();
+            if (mounted) setCurrentUser(null);
+          }
+        } catch {
+          clearToken();
+          if (mounted) setCurrentUser(null);
+        }
+      }
+    }
+
+    init();
+    return () => { mounted = false; };
+  }, [loadUserData]);
+
+  // ── 4. Periodic Background Refresh (Polling every 10s) ──────────────────────
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshEvents();
+      if (currentUser?.role === 'admin') {
+        refreshAuditLogs();
+      } else if (currentUser?.role === 'gate_staff') {
+        refreshScanHistory();
+      }
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [currentUser?.role, refreshEvents, refreshAuditLogs, refreshScanHistory]);
+
+  // ── 5. Live Seat Hold Countdown Timer ──────────────────────────────────────
+  useEffect(() => {
+    if (!activeSeat || !activeSeat.lockExpiresAt) {
+      setSeatLockTimeRemaining(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const remaining = Math.max(0, Math.ceil((activeSeat.lockExpiresAt! - now) / 1000));
+      setSeatLockTimeRemaining(remaining);
+      if (remaining === 0) {
+        releaseActiveSeat();
+      }
     }, 1000);
+
     return () => clearInterval(interval);
   }, [activeSeat]);
 
-  const loginAsStudent = (name = 'Rahul Sharma', regNumber = 'RA2111003010142', dept = 'Computer Science & Engineering', year = '3rd Year') => {
-    const user: UserProfile = {
-      id: `usr-${regNumber.toLowerCase()}`,
-      name,
-      regNumber,
-      email: `${name.toLowerCase().replace(/\s+/g, '.')}@vibrance.edu`,
-      role: 'student',
-      department: dept,
-      year,
-      avatarSeed: name,
-    };
-    setCurrentUser(user);
-    // Also authenticate with backend (non-blocking) to get real JWT
-    backendSync.loginWithBackend(regNumber).then((auth) => {
-      if (auth) {
-        setCurrentUser((prev) => prev ? {
-          ...prev,
-          id: auth.user.id,
-          avatarSeed: auth.user.avatarSeed ?? name,
-        } : prev);
+  // ── 6. Auth Handlers (Real Backend API Authentications) ───────────────────
+  const loginAsStudent = async (
+    name = 'Rahul Sharma',
+    regNumber = 'RA2111003010142',
+    dept = 'Computer Science & Engineering',
+    year = '3rd Year (B.Tech)'
+  ) => {
+    try {
+      const res = await authApi.login(regNumber, 'vibrance2026', 'student', name, dept);
+      if (res.success && res.data) {
+        setToken(res.data.token);
+        const profile = mapUserDTOtoUserProfile(res.data.user);
+        setCurrentUser(profile);
+        await loadUserData(profile);
       }
-    }).catch(() => {/* ignore — fallback to local */});
+    } catch (err) {
+      console.error('[FestContext] Student authentication failed:', err);
+      throw err;
+    }
   };
 
-  const loginAsGateStaff = (name = 'Officer Rajesh Menon', regNumber = 'STF-GATE-04', dept = 'Main Gate Security') => {
-    const user: UserProfile = {
-      id: `usr-${regNumber.toLowerCase()}`,
-      name,
-      regNumber,
-      email: `${name.toLowerCase().replace(/\s+/g, '.')}@vibrance.edu`,
-      role: 'gate_staff',
-      department: dept,
-      avatarSeed: name,
-    };
-    setCurrentUser(user);
-    backendSync.loginWithBackend(regNumber).catch(() => {/* ignore */});
+  const loginAsGateStaff = async (
+    name = 'Officer Rajesh Menon',
+    regNumber = 'STF-GATE-04',
+    dept = 'Main Gate Security Post A'
+  ) => {
+    try {
+      const res = await authApi.login(regNumber, 'vibrance2026', 'gate_staff', name, dept);
+      if (res.success && res.data) {
+        setToken(res.data.token);
+        const profile = mapUserDTOtoUserProfile(res.data.user);
+        setCurrentUser(profile);
+        await loadUserData(profile);
+      }
+    } catch (err) {
+      console.error('[FestContext] Gate staff authentication failed:', err);
+      throw err;
+    }
   };
 
-  const loginAsAdmin = (name = 'Dr. Ramesh Sundaram', regNumber = 'FAC-DBMS-702', dept = 'Computer Science & Engineering') => {
-    const user: UserProfile = {
-      id: `usr-${regNumber.toLowerCase()}`,
-      name,
-      regNumber,
-      email: `${name.toLowerCase().replace(/\s+/g, '.')}@vibrance.edu`,
-      role: 'admin',
-      department: dept,
-      avatarSeed: name,
-    };
-    setCurrentUser(user);
+  const loginAsAdmin = async (
+    name = 'Dr. Vikramaditya Rao',
+    regNumber = 'ADMIN-FACULTY-01',
+    dept = 'DBMS Lab Coordinator & Event Controller'
+  ) => {
+    try {
+      const res = await authApi.login(regNumber, 'vibrance2026', 'admin', name, dept);
+      if (res.success && res.data) {
+        setToken(res.data.token);
+        const profile = mapUserDTOtoUserProfile(res.data.user);
+        setCurrentUser(profile);
+        await loadUserData(profile);
+      }
+    } catch (err) {
+      console.error('[FestContext] Admin authentication failed:', err);
+      throw err;
+    }
+  };
+
+  const login = async (regNumber: string, password?: string): Promise<UserProfile | null> => {
+    try {
+      const res = await authApi.login(regNumber, password);
+      if (res.success && res.data) {
+        setToken(res.data.token);
+        const profile = mapUserDTOtoUserProfile(res.data.user);
+        setCurrentUser(profile);
+        await loadUserData(profile);
+        return profile;
+      }
+    } catch (err) {
+      console.error('[FestContext] Login failed:', err);
+      throw err;
+    }
+    return null;
   };
 
   const logout = () => {
+    clearToken();
     setCurrentUser(null);
-    localStorage.removeItem(STORAGE_KEYS.USER);
-  };
-
-  // Event Management CRUD
-  const addEvent = (eventData: {
-    title: string;
-    category: EventCategory;
-    artistOrHost: string;
-    date: string;
-    time: string;
-    venue: string;
-    basePrice: number;
-    tag?: string;
-    shortDesc?: string;
-    ticketBgImage?: string;
-    totalSeats?: number;
-    startOffsetHours?: number;
-  }): FestEvent => {
-    const id = `evt-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
-    const totalSeats = eventData.totalSeats || 48;
-    const seats = generateSeatsForEvent(id, eventData.basePrice, totalSeats);
-    const now = Date.now();
-    const startOffset = (eventData.startOffsetHours ?? 24) * 3600 * 1000;
-    const newEvent: FestEvent = {
-      id,
-      title: eventData.title,
-      category: eventData.category,
-      artistOrHost: eventData.artistOrHost,
-      date: eventData.date,
-      time: eventData.time,
-      venue: eventData.venue,
-      basePrice: eventData.basePrice,
-      totalSeats: seats.length,
-      availableSeats: seats.filter((s) => s.status === 'available').length,
-      lockedSeatsCount: 0,
-      bookedSeatsCount: 0,
-      tag: eventData.tag || 'NEWLY ADDED EVENT',
-      shortDesc: eventData.shortDesc || 'Newly created festival event stage.',
-      ticketBgImage: eventData.ticketBgImage,
-      seats,
-      startTimestamp: now + startOffset,
-      endTimestamp: now + startOffset + 3 * 3600 * 1000,
-    };
-
-    setEvents((prev) => [newEvent, ...prev]);
-
-    addAuditLog({
-      action: 'EVENT_INSERT',
-      eventId: id,
-      eventTitle: eventData.title,
-      userName: currentUser?.name || 'Administrator',
-      regNumber: currentUser?.regNumber || 'ADMIN-SYS',
-      status: 'CONFIRMED',
-      details: `Created new event "${eventData.title}" (${eventData.category}) at ${eventData.venue} for ₹${eventData.basePrice}. Total Seats: ${seats.length}.`,
-    });
-
-    return newEvent;
-  };
-
-  const updateEvent = (updatedEvent: FestEvent) => {
-    setEvents((prev) =>
-      prev.map((e) => (e.id === updatedEvent.id ? { ...e, ...updatedEvent } : e))
-    );
-    if (selectedEvent?.id === updatedEvent.id) {
-      setSelectedEvent(updatedEvent);
-    }
-
-    addAuditLog({
-      action: 'EVENT_UPDATE',
-      eventId: updatedEvent.id,
-      eventTitle: updatedEvent.title,
-      userName: currentUser?.name || 'Administrator',
-      regNumber: currentUser?.regNumber || 'ADMIN-SYS',
-      status: 'CONFIRMED',
-      details: `Updated event details for "${updatedEvent.title}" (Venue: ${updatedEvent.venue}, Base Price: ₹${updatedEvent.basePrice}).`,
-    });
-  };
-
-  const deleteEvent = (eventId: string) => {
-    const target = events.find((e) => e.id === eventId);
-    setEvents((prev) => prev.filter((e) => e.id !== eventId));
-    if (selectedEvent?.id === eventId) {
-      setSelectedEvent(null);
-    }
-    if (activeSeatEventId === eventId) {
-      releaseActiveSeat();
-    }
-
-    addAuditLog({
-      action: 'EVENT_DELETE',
-      eventId,
-      eventTitle: target?.title || eventId,
-      userName: currentUser?.name || 'Administrator',
-      regNumber: currentUser?.regNumber || 'ADMIN-SYS',
-      status: 'EXPIRED',
-      details: `Deleted event "${target?.title || eventId}" from festival lineup.`,
-    });
-  };
-
-  // User & Staff Management CRUD
-  const addUser = (userData: {
-    name: string;
-    regNumber: string;
-    email?: string;
-    role: UserRole;
-    department: string;
-    year?: string;
-  }): UserProfile => {
-    const id = `usr-${userData.role.substring(0, 3)}-${Date.now().toString(36)}`;
-    const newUser: UserProfile = {
-      id,
-      name: userData.name,
-      regNumber: userData.regNumber,
-      email: userData.email || `${userData.name.toLowerCase().replace(/\s+/g, '.')}@vibrance.edu`,
-      role: userData.role,
-      department: userData.department,
-      year: userData.year || (userData.role === 'student' ? '1st Year (B.Tech)' : 'Staff Lead'),
-      avatarSeed: userData.name.toLowerCase().split(' ')[0],
-    };
-
-    setUsers((prev) => [newUser, ...prev]);
-
-    addAuditLog({
-      action: 'USER_REGISTER',
-      eventId: 'SYSTEM',
-      eventTitle: 'User Account Provisioning',
-      userName: currentUser?.name || 'Administrator',
-      regNumber: currentUser?.regNumber || 'ADMIN-SYS',
-      status: 'CONFIRMED',
-      details: `Provisioned new account for ${userData.name} (Role: ${userData.role}, ID: ${userData.regNumber}, Dept: ${userData.department}).`,
-    });
-
-    return newUser;
-  };
-
-  const deleteUser = (userId: string) => {
-    const target = users.find((u) => u.id === userId);
-    setUsers((prev) => prev.filter((u) => u.id !== userId));
-
-    addAuditLog({
-      action: 'USER_DELETE',
-      eventId: 'SYSTEM',
-      eventTitle: 'User Account Deprovisioning',
-      userName: currentUser?.name || 'Administrator',
-      regNumber: currentUser?.regNumber || 'ADMIN-SYS',
-      status: 'EXPIRED',
-      details: `Deprovisioned user account for ${target?.name || userId} (${target?.role || 'Unknown'}).`,
-    });
-  };
-
-  const selectSeatForBooking = (event: FestEvent, seat: Seat): boolean => {
-    if (!currentUser) return false;
-    const now = Date.now();
-    const lockDurationSec = 180;
-    const lockExpiresAt = now + lockDurationSec * 1000;
-
-    if (seat.status === 'booked' || seat.status === 'locked') {
-      return false;
-    }
-
-    const updatedSeat: Seat = {
-      ...seat,
-      status: 'locked',
-      lockedBy: {
-        userId: currentUser.id,
-        userName: currentUser.name,
-        regNumber: currentUser.regNumber,
-      },
-      lockExpiresAt,
-    };
-
-    setEvents((prev) =>
-      prev.map((e) => {
-        if (e.id !== event.id) return e;
-        const newSeats = e.seats.map((s) => (s.id === seat.id ? updatedSeat : s));
-        return {
-          ...e,
-          seats: newSeats,
-          availableSeats: newSeats.filter((s) => s.status === 'available').length,
-          lockedSeatsCount: newSeats.filter((s) => s.status === 'locked').length,
-        };
-      })
-    );
-
-    setActiveSeat(updatedSeat);
-    setActiveSeatEventId(event.id);
-    setSeatLockTimeRemaining(lockDurationSec);
-
-    return true;
-  };
-
-  const releaseActiveSeat = () => {
-    if (!activeSeat || !activeSeatEventId) return;
-    const seatId = activeSeat.id;
-    const eventId = activeSeatEventId;
-
-    setEvents((prev) =>
-      prev.map((e) => {
-        if (e.id !== eventId) return e;
-        const newSeats = e.seats.map((s) =>
-          s.id === seatId
-            ? { ...s, status: 'available' as const, lockedBy: undefined, lockExpiresAt: undefined }
-            : s
-        );
-        return {
-          ...e,
-          seats: newSeats,
-          availableSeats: newSeats.filter((s) => s.status === 'available').length,
-          lockedSeatsCount: newSeats.filter((s) => s.status === 'locked').length,
-        };
-      })
-    );
-
+    setMyBookings([]);
+    setAllBookings([]);
+    setAuditLogs([]);
+    setScanHistory([]);
     setActiveSeat(null);
     setActiveSeatEventId(null);
     setSeatLockTimeRemaining(0);
   };
 
+  const switchRole = async (targetRole: UserRole) => {
+    const roleLower = targetRole.toLowerCase();
+    if (roleLower.includes('admin')) {
+      await loginAsAdmin();
+    } else if (roleLower.includes('gate') || roleLower.includes('staff')) {
+      await loginAsGateStaff();
+    } else {
+      await loginAsStudent();
+    }
+  };
+
+  const updateProfile = (profile: Partial<UserProfile>) => {
+    setCurrentUser((prev) => (prev ? { ...prev, ...profile } : null));
+  };
+
+  // ── 7. Strict 2PL Seat Reservation (Acquired at Checkout) ──────────────────
+  const selectSeatForBooking = async (event: FestEvent, seat: Seat): Promise<boolean> => {
+    if (!currentUser) return false;
+
+    try {
+      const res = await seatsApi.lockSeat(seat.id, 180);
+      if (res.success && res.data && res.data.success) {
+        const expiresAt = res.data.lockExpiresAt
+          ? (typeof res.data.lockExpiresAt === 'number'
+              ? res.data.lockExpiresAt
+              : new Date(res.data.lockExpiresAt).getTime())
+          : Date.now() + 180000;
+
+        const updatedSeat: Seat = {
+          ...seat,
+          status: 'locked',
+          lockedBy: {
+            userId: currentUser.id,
+            userName: currentUser.name,
+            regNumber: currentUser.regNumber,
+          },
+          lockExpiresAt: expiresAt,
+        };
+
+        setActiveSeat(updatedSeat);
+        setActiveSeatEventId(event.id);
+        setSeatLockTimeRemaining(180);
+
+        // Update local event seat matrix immediately
+        setEvents((prev) =>
+          prev.map((e) => {
+            if (e.id !== event.id) return e;
+            const newSeats = e.seats.map((s) => (s.id === seat.id ? updatedSeat : s));
+            return {
+              ...e,
+              seats: newSeats,
+              availableSeats: newSeats.filter((s) => s.status === 'available').length,
+              lockedSeatsCount: newSeats.filter((s) => s.status === 'locked').length,
+            };
+          })
+        );
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.warn('[FestContext] Strict 2PL seat lock rejected by database:', err);
+      await refreshEvents();
+      return false;
+    }
+  };
+
+  const releaseActiveSeat = async (): Promise<void> => {
+    if (!activeSeat || !activeSeatEventId) return;
+    const seatId = activeSeat.id;
+    const eventId = activeSeatEventId;
+
+    setActiveSeat(null);
+    setActiveSeatEventId(null);
+    setSeatLockTimeRemaining(0);
+
+    try {
+      await seatsApi.releaseSeat(seatId);
+      await refreshEvents();
+    } catch (err) {
+      console.warn('[FestContext] Release seat lock error:', err);
+    }
+  };
+
+  // ── 8. ACID Booking Creation & Cancellation ────────────────────────────────
   const confirmBooking = async (details: {
     name: string;
     regNumber: string;
@@ -564,375 +643,123 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const event = events.find((e) => e.id === activeSeatEventId) || selectedEvent;
     if (!event) return null;
 
-    await new Promise((r) => setTimeout(r, 450));
-
-    // Fire backend booking creation (non-blocking — local state is the source of truth for UI)
-    backendSync.createBookingWithBackend({
-      eventId: event.id,
-      seatId: activeSeat.id,
-      name: details.name,
-      regNumber: details.regNumber,
-      department: details.department,
-      paymentMethod: details.paymentMethod,
-    }).catch(() => {/* backend offline — local booking still stored */});
-
-    const bookingRef = `VIB26-${event.category.substring(0, 3)}-${Math.floor(100000 + Math.random() * 900000)}`;
-    const timing = getEventTiming(event);
-
-    const newBooking: Booking = {
-      id: `bk-${Date.now()}`,
-      bookingRef,
-      eventId: event.id,
-      eventTitle: event.title,
-      eventCategory: event.category,
-      artistOrHost: event.artistOrHost,
-      eventDate: event.date,
-      eventTime: event.time,
-      eventVenue: event.venue,
-      seatId: activeSeat.id,
-      seatLabel: `${activeSeat.row}-${activeSeat.number}`,
-      seatCategory: activeSeat.category,
-      studentName: details.name,
-      regNumber: details.regNumber,
-      department: details.department,
-      amount: activeSeat.price,
-      paymentMethod: details.paymentMethod,
-      bookedAt: Date.now(),
-      qrPayload: `VIBRANCE26-TICKET-${bookingRef}-${activeSeat.id}-${details.regNumber}`,
-      ticketBgImage: event.ticketBgImage,
-      status: 'confirmed',
-      startTimestamp: timing.startTimestamp,
-      endTimestamp: timing.endTimestamp,
-    };
-
-    const bookedSeat: Seat = {
-      ...activeSeat,
-      status: 'booked',
-      lockedBy: undefined,
-      lockExpiresAt: undefined,
-      bookedBy: {
-        userId: currentUser.id,
-        userName: details.name,
+    try {
+      const res = await bookingsApi.create({
+        eventId: event.id,
+        seatId: activeSeat.id,
+        name: details.name,
         regNumber: details.regNumber,
-        bookingRef,
-      },
-    };
+        department: details.department,
+        paymentMethod: details.paymentMethod,
+      });
 
-    setEvents((prev) =>
-      prev.map((e) => {
-        if (e.id !== event.id) return e;
-        const newSeats = e.seats.map((s) => (s.id === activeSeat.id ? bookedSeat : s));
-        return {
-          ...e,
-          seats: newSeats,
-          availableSeats: newSeats.filter((s) => s.status === 'available').length,
-          bookedSeatsCount: newSeats.filter((s) => s.status === 'booked').length,
-          lockedSeatsCount: newSeats.filter((s) => s.status === 'locked').length,
-        };
-      })
-    );
+      if (res.success && res.data) {
+        const newBooking = mapBookingDTOtoBooking(res.data);
+        setActiveSeat(null);
+        setActiveSeatEventId(null);
+        setSeatLockTimeRemaining(0);
 
-    setAllBookings((prev) => [newBooking, ...prev]);
+        setMyBookings((prev) => [newBooking, ...prev]);
+        setAllBookings((prev) => [newBooking, ...prev]);
+        await refreshEvents();
 
-    addAuditLog({
-      action: 'BOOKING_CONFIRMED',
-      eventId: event.id,
-      eventTitle: event.title,
-      seatLabel: `${activeSeat.row}-${activeSeat.number}`,
-      userName: details.name,
-      regNumber: details.regNumber,
-      status: 'SUCCESS',
-      details: `Transaction committed with Strict 2PL. Ref: ${bookingRef}.`,
-      protocol: 'Strict 2-Phase Locking (2PL)',
-    });
-
-    setActiveSeat(null);
-    setActiveSeatEventId(null);
-    setSeatLockTimeRemaining(0);
-
-    return newBooking;
+        if (currentUser.role === 'admin') {
+          await refreshAuditLogs();
+        }
+        return newBooking;
+      }
+    } catch (err: any) {
+      console.error('[FestContext] ACID booking failed:', err);
+      await refreshEvents();
+      throw err;
+    }
+    return null;
   };
 
-  const cancelBooking = (bookingId: string): boolean => {
-    const booking = allBookings.find((b) => b.id === bookingId);
-    if (!booking) return false;
-
-    setAllBookings((prev) =>
-      prev.map((b) => (b.id === bookingId ? { ...b, status: 'cancelled' as const } : b))
-    );
-
-    setEvents((prev) =>
-      prev.map((e) => {
-        if (e.id !== booking.eventId) return e;
-        const newSeats = e.seats.map((s) =>
-          s.id === booking.seatId
-            ? { ...s, status: 'available' as const, bookedBy: undefined, lockedBy: undefined, lockExpiresAt: undefined }
-            : s
-        );
-        return {
-          ...e,
-          seats: newSeats,
-          availableSeats: newSeats.filter((s) => s.status === 'available').length,
-          bookedSeatsCount: newSeats.filter((s) => s.status === 'booked').length,
-        };
-      })
-    );
-
-    addAuditLog({
-      action: 'TICKET_CANCELLED',
-      eventId: booking.eventId,
-      eventTitle: booking.eventTitle,
-      seatLabel: booking.seatLabel,
-      userName: booking.studentName,
-      regNumber: booking.regNumber,
-      status: 'RELEASED',
-      details: `Booking ${booking.bookingRef} cancelled. Seat released.`,
-    });
-
-    return true;
+  const cancelBooking = async (bookingId: string): Promise<boolean> => {
+    try {
+      await bookingsApi.cancel(bookingId);
+      setMyBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: 'cancelled' as const } : b)));
+      setAllBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: 'cancelled' as const } : b)));
+      await refreshEvents();
+      return true;
+    } catch (err) {
+      console.error('[FestContext] Cancel booking error:', err);
+      return false;
+    }
   };
 
-  // Real-time verification supporting VALID, ALREADY_USED, INVALID, and EXPIRED
-  const verifyTicket = (query: string, staff: { name: string; staffId: string }): ScanRecord => {
-    const raw = query.trim();
-    const trimmed = raw.toUpperCase();
-    const now = Date.now();
-
-    const foundBooking = allBookings.find((b) => {
-      const bRef = b.bookingRef.toUpperCase();
-      const bId = b.id.toUpperCase();
-      const bPayload = (b.qrPayload || '').toUpperCase();
-
-      return (
-        bRef === trimmed ||
-        bId === trimmed ||
-        bPayload === trimmed ||
-        trimmed.includes(bRef) ||
-        (bPayload && trimmed.includes(bPayload)) ||
-        (bPayload && bPayload.includes(trimmed))
-      );
-    });
-
-    if (!foundBooking) {
-      const record: ScanRecord = {
-        id: `scan-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        timestamp: now,
-        query: raw,
-        result: 'INVALID',
-        staffMember: staff,
-        message: 'Invalid pass or reference code. No record found in central database.',
-      };
-      setScanHistory((prev) => [record, ...prev]);
-      addAuditLog({
-        action: 'GATE_REJECT_INVALID',
-        eventId: 'SYSTEM',
-        eventTitle: 'Gate Verification',
-        userName: staff.name,
-        regNumber: staff.staffId,
-        status: 'EXPIRED',
-        details: `Invalid ticket payload rejected: "${raw}". Not found in records.`,
-      });
-      return record;
+  // ── 9. Gatekeeper QR Scan & Admission ──────────────────────────────────────
+  const verifyTicket = async (query: string, staff: { name: string; staffId: string }): Promise<ScanRecord> => {
+    try {
+      const res = await scansApi.verify(query);
+      if (res.success && res.data) {
+        const record = mapScanDTOtoScanRecord(res.data);
+        record.staffMember = staff;
+        setScanHistory((prev) => [record, ...prev]);
+        await refreshBookings();
+        return record;
+      }
+    } catch (err) {
+      console.error('[FestContext] QR Verification error:', err);
     }
 
-    // Check if event has expired / concluded in real time
-    const timing = getEventTiming(foundBooking);
-    if (timing.isExpired) {
-      const record: ScanRecord = {
-        id: `scan-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        timestamp: now,
-        query: raw,
-        result: 'EXPIRED',
-        staffMember: staff,
-        bookingId: foundBooking.id,
-        bookingRef: foundBooking.bookingRef,
-        eventTitle: foundBooking.eventTitle,
-        attendeeName: foundBooking.studentName,
-        seatLabel: foundBooking.seatLabel,
-        message: `Pass Expired: The event concluded ${timing.countdownText.toLowerCase()}. Gate admission is closed.`,
-      };
-      setScanHistory((prev) => [record, ...prev]);
-      addAuditLog({
-        action: 'TICKET_VERIFY_EXPIRED',
-        eventId: foundBooking.eventId,
-        eventTitle: foundBooking.eventTitle,
-        seatLabel: foundBooking.seatLabel,
-        userName: foundBooking.studentName,
-        regNumber: foundBooking.regNumber,
-        status: 'EXPIRED',
-        details: `Expired pass [${foundBooking.bookingRef}] scanned. Event concluded. Entry rejected.`,
-      });
-      return record;
-    }
-
-    if (foundBooking.status === 'checked_in') {
-      const record: ScanRecord = {
-        id: `scan-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        timestamp: now,
-        query: raw,
-        result: 'ALREADY_USED',
-        staffMember: staff,
-        bookingId: foundBooking.id,
-        bookingRef: foundBooking.bookingRef,
-        eventTitle: foundBooking.eventTitle,
-        attendeeName: foundBooking.studentName,
-        seatLabel: foundBooking.seatLabel,
-        originalCheckedInAt: foundBooking.checkedInAt || now - 1800000,
-        originalCheckedInBy: foundBooking.checkedInBy
-          ? `${foundBooking.checkedInBy.name} (${foundBooking.checkedInBy.staffId})`
-          : 'Gate Staff #01',
-        message: 'Duplicate Entry Alert: This pass has already been checked in.',
-      };
-      setScanHistory((prev) => [record, ...prev]);
-      addAuditLog({
-        action: 'GATE_REJECT_DUPLICATE',
-        eventId: foundBooking.eventId,
-        eventTitle: foundBooking.eventTitle,
-        seatLabel: foundBooking.seatLabel,
-        userName: foundBooking.studentName,
-        regNumber: foundBooking.regNumber,
-        status: 'EXPIRED',
-        details: `Duplicate entry intercepted for pass [${foundBooking.bookingRef}] (Attendee: ${foundBooking.studentName}).`,
-      });
-      return record;
-    }
-
-    // Valid pass admission
-    setAllBookings((prev) =>
-      prev.map((b) =>
-        b.id === foundBooking.id
-          ? {
-              ...b,
-              status: 'checked_in' as const,
-              checkedInAt: now,
-              checkedInBy: { name: staff.name, staffId: staff.staffId },
-            }
-          : b
-      )
-    );
-
-    const record: ScanRecord = {
-      id: `scan-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      timestamp: now,
-      query: raw,
-      result: 'VALID',
+    const fallbackRecord: ScanRecord = {
+      id: `scan-${Date.now()}`,
+      timestamp: Date.now(),
+      query,
+      result: 'INVALID',
       staffMember: staff,
-      bookingId: foundBooking.id,
-      bookingRef: foundBooking.bookingRef,
-      eventTitle: foundBooking.eventTitle,
-      attendeeName: foundBooking.studentName,
-      seatLabel: foundBooking.seatLabel,
-      message: 'Access Granted: Valid festival digital pass.',
+      message: 'Pass not recognized in festival registry.',
     };
-
-    setScanHistory((prev) => [record, ...prev]);
-    addAuditLog({
-      action: 'GATE_ADMIT_VALID',
-      eventId: foundBooking.eventId,
-      eventTitle: foundBooking.eventTitle,
-      seatLabel: foundBooking.seatLabel,
-      userName: foundBooking.studentName,
-      regNumber: foundBooking.regNumber,
-      status: 'CONFIRMED',
-      details: `Gate admission granted for ${foundBooking.studentName} (${foundBooking.bookingRef}, Seat ${foundBooking.seatLabel}) at ${foundBooking.eventTitle}.`,
-    });
-
-    return record;
+    setScanHistory((prev) => [fallbackRecord, ...prev]);
+    return fallbackRecord;
   };
 
-  const clearAuditLogs = () => {
-    setAuditLogs([]);
-    localStorage.removeItem(STORAGE_KEYS.LOGS);
+  const clearScanHistory = () => {
+    setScanHistory([]);
   };
 
+  // ── 10. Admin Audit Logs ───────────────────────────────────────────────────
+  const clearAuditLogs = async (): Promise<void> => {
+    try {
+      await auditApi.clearLogs();
+      setAuditLogs([]);
+    } catch (err) {
+      console.error('[FestContext] Clear audit logs error:', err);
+    }
+  };
+
+  // ── 11. Real Server-Side Multi-Threaded Concurrency Simulator ─────────────
   const runConcurrencySimulation = async (params: {
     strategy: ConcurrencyStrategy;
     concurrencyLevel: number;
     targetEventId: string;
+    speedMs?: number;
   }): Promise<ConcurrencyRunResult> => {
     setIsSimulating(true);
-    setSimulationProgress(10);
-    await new Promise((r) => setTimeout(r, 200));
-    setSimulationProgress(50);
-    await new Promise((r) => setTimeout(r, 300));
-    setSimulationProgress(100);
-
-    const targetEvent = events.find((e) => e.id === params.targetEventId) || events[0];
-    const initialStock = 1;
-    let successfulCount = 0;
-    let rejectedCount = 0;
-    let finalStock = 0;
-    let overbookingDetected = false;
-
-    const txs: any[] = [];
-    for (let i = 1; i <= params.concurrencyLevel; i++) {
-      const isFirst = i === 1;
-      let txStatus: 'COMMITTED' | 'REJECTED' = 'REJECTED';
-      let message = 'Transaction committed with exclusive lock.';
-
-      if (params.strategy === 'NO_LOCKING') {
-        txStatus = 'COMMITTED';
-        message = 'Dirty read passed. Wrote to database without lock!';
-      } else {
-        if (isFirst) {
-          txStatus = 'COMMITTED';
-        } else {
-          txStatus = 'REJECTED';
-          message = 'Row lock held by another thread. 409 conflict rejected.';
-        }
-      }
-
-      txs.push({
-        txId: `TX-${1000 + i}`,
-        clientId: `worker-${i}`,
-        clientName: `Student Worker #${i}`,
-        status: txStatus,
-        currentStep: txStatus === 'COMMITTED' ? 'COMMIT_WORK' : 'ROLLBACK',
-        timestamp: Date.now() + i * 15,
-        latencyMs: 12 + (i * 3) % 25,
-        seatClaimed: `${targetEvent.title} (A-1)`,
-        message,
+    setSimulationProgress(25);
+    try {
+      setSimulationProgress(50);
+      const res = await concurrencyApi.simulate({
+        strategy: params.strategy,
+        concurrencyLevel: params.concurrencyLevel,
+        targetEventId: params.targetEventId,
       });
+      setSimulationProgress(100);
+      if (res.success && res.data) {
+        const mapped = mapConcurrencyDTOtoRunResult(res.data);
+        setLastSimResult(mapped);
+        setSimHistory((prev) => [mapped, ...prev.slice(0, 19)]);
+        setIsSimulating(false);
+        await refreshEvents();
+        return mapped;
+      }
+    } catch (err) {
+      console.error('[FestContext] Concurrency simulation error:', err);
     }
-
-    if (params.strategy === 'NO_LOCKING') {
-      successfulCount = params.concurrencyLevel;
-      rejectedCount = 0;
-      finalStock = initialStock - params.concurrencyLevel;
-      overbookingDetected = true;
-    } else {
-      successfulCount = 1;
-      rejectedCount = params.concurrencyLevel - 1;
-      finalStock = 0;
-      overbookingDetected = false;
-    }
-
-    const result: ConcurrencyRunResult = {
-      runId: `RUN-${Date.now().toString().slice(-4)}`,
-      strategy: params.strategy,
-      targetEventId: targetEvent.id,
-      targetEventTitle: targetEvent.title,
-      concurrencyLevel: params.concurrencyLevel,
-      successfulCount,
-      rejectedCount,
-      deadlockCount: 0,
-      initialStock,
-      finalStock,
-      durationMs: 480,
-      overbookingDetected,
-      overbookedSeats: overbookingDetected ? successfulCount - initialStock : 0,
-      transactions: txs,
-      dbLogs: [
-        `BEGIN TRANSACTION ISOLATION ${params.strategy};`,
-        `SELECT available_seats FROM events WHERE id = '${targetEvent.id}' FOR UPDATE;`,
-        `UPDATE events SET available_seats = ${finalStock} WHERE id = '${targetEvent.id}';`,
-        `COMMIT;`,
-      ],
-    };
-
-    setLastSimResult(result);
     setIsSimulating(false);
-    return result;
+    throw new Error('Concurrency simulation failed on backend server.');
   };
 
   const runSideBySideSimulation = async (params: {
@@ -941,34 +768,108 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }): Promise<SideBySideRunResult> => {
     setIsSimulating(true);
     setSimulationProgress(25);
-    const noLock = await runConcurrencySimulation({
-      strategy: 'NO_LOCKING',
-      concurrencyLevel: params.concurrencyLevel,
-      targetEventId: params.targetEventId,
-    });
-    setSimulationProgress(75);
-    const twoPl = await runConcurrencySimulation({
-      strategy: 'TWO_PHASE_LOCKING',
-      concurrencyLevel: params.concurrencyLevel,
-      targetEventId: params.targetEventId,
-    });
-    setSimulationProgress(100);
+    try {
+      const res = await concurrencyApi.sideBySide(params.concurrencyLevel, params.targetEventId);
+      setSimulationProgress(100);
+      if (res.success && res.data) {
+        const result: SideBySideRunResult = {
+          noLockResult: mapConcurrencyDTOtoRunResult(res.data.noLockResult),
+          twoPlResult: mapConcurrencyDTOtoRunResult(res.data.twoPlResult),
+        };
+        setLastSideBySideResult(result);
+        setIsSimulating(false);
+        await refreshEvents();
+        return result;
+      }
+    } catch (err) {
+      console.error('[FestContext] Side-by-side benchmark error:', err);
+    }
     setIsSimulating(false);
-
-    const sideResult: SideBySideRunResult = {
-      noLockResult: noLock,
-      twoPlResult: twoPl,
-    };
-    setLastSideBySideResult(sideResult);
-    return sideResult;
+    throw new Error('Side-by-side benchmark failed on backend server.');
   };
 
-  const resetDatabaseState = () => {
-    setEvents(INITIAL_EVENTS);
-    setAllBookings(INITIAL_BOOKINGS);
-    setAuditLogs(INITIAL_AUDIT_LOGS);
-    setScanHistory(INITIAL_SCAN_HISTORY);
-    localStorage.clear();
+  // ── 12. User Management CRUD ───────────────────────────────────────────────
+  const addUser = async (userData: {
+    name: string;
+    regNumber: string;
+    email?: string;
+    role: UserRole;
+    department: string;
+    year?: string;
+  }): Promise<UserProfile | null> => {
+    try {
+      const res = await authApi.register({
+        regNumber: userData.regNumber,
+        name: userData.name,
+        email: userData.email || `${userData.regNumber.toLowerCase()}@vibrance.edu`,
+        role: userData.role,
+        department: userData.department,
+        yearOfStudy: userData.year || '3rd Year (B.Tech)',
+      });
+      if (res.success && res.data) {
+        const profile = mapUserDTOtoUserProfile(res.data.user);
+        setUsers((prev) => [profile, ...prev]);
+        return profile;
+      }
+    } catch (err) {
+      console.error('[FestContext] Create user error:', err);
+    }
+    return null;
+  };
+
+  const deleteUser = async (userId: string): Promise<void> => {
+    try {
+      await authApi.deleteUser(userId);
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+    } catch (err) {
+      console.error('[FestContext] Delete user error:', err);
+    }
+  };
+
+  // ── 13. Event Management CRUD ──────────────────────────────────────────────
+  const addEvent = async (eventData: any): Promise<FestEvent | null> => {
+    try {
+      const res = await eventsApi.create(eventData);
+      if (res.success && res.data) {
+        const newEvent = mapEventDTOtoFestEvent(res.data);
+        setEvents((prev) => [newEvent, ...prev]);
+        return newEvent;
+      }
+    } catch (err) {
+      console.error('[FestContext] Create event error:', err);
+    }
+    return null;
+  };
+
+  const updateEvent = async (updatedEvent: FestEvent): Promise<void> => {
+    try {
+      await eventsApi.update(updatedEvent.id, updatedEvent as any);
+      setEvents((prev) => prev.map((e) => (e.id === updatedEvent.id ? updatedEvent : e)));
+      if (selectedEvent?.id === updatedEvent.id) {
+        setSelectedEvent(updatedEvent);
+      }
+    } catch (err) {
+      console.error('[FestContext] Update event error:', err);
+    }
+  };
+
+  const deleteEvent = async (eventId: string): Promise<void> => {
+    try {
+      await eventsApi.delete(eventId);
+      setEvents((prev) => prev.filter((e) => e.id !== eventId));
+      if (selectedEvent?.id === eventId) {
+        setSelectedEvent(null);
+      }
+    } catch (err) {
+      console.error('[FestContext] Delete event error:', err);
+    }
+  };
+
+  const resetDatabaseState = async (): Promise<void> => {
+    await refreshEvents();
+    if (currentUser?.role === 'admin') {
+      await loadUserData(currentUser);
+    }
   };
 
   return (
@@ -978,29 +879,40 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginAsStudent,
         loginAsGateStaff,
         loginAsAdmin,
+        login,
         logout,
+        switchRole,
+        updateProfile,
+
         users,
         addUser,
         deleteUser,
+
         events,
         selectedEvent,
         setSelectedEvent,
         addEvent,
         updateEvent,
         deleteEvent,
+
         activeSeat,
         activeSeatEventId,
         seatLockTimeRemaining,
         selectSeatForBooking,
         releaseActiveSeat,
+
         allBookings,
         myBookings,
         confirmBooking,
         cancelBooking,
+
         scanHistory,
+        clearScanHistory,
         verifyTicket,
+
         auditLogs,
         clearAuditLogs,
+
         isSimulating,
         simulationProgress,
         lastSimResult,
@@ -1016,8 +928,10 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-export const useFest = () => {
+export const useFest = (): FestContextType => {
   const context = useContext(FestContext);
-  if (!context) throw new Error('useFest must be used within FestProvider');
+  if (!context) {
+    throw new Error('useFest must be used within a FestProvider');
+  }
   return context;
 };

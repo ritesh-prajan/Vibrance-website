@@ -47,11 +47,11 @@ export const AdminUsersPage: React.FC = () => {
     });
   }, [users, roleFilter, searchQuery]);
 
-  const handleAddUser = (e: React.FormEvent) => {
+  const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !regNumber.trim()) return;
 
-    addUser({
+    await addUser({
       name: name.trim(),
       role,
       regNumber: regNumber.trim(),
@@ -64,21 +64,21 @@ export const AdminUsersPage: React.FC = () => {
     resetForm();
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!deletingUser) return;
-    deleteUser(deletingUser.id);
+    await deleteUser(deletingUser.id);
     setDeletingUser(null);
   };
 
-  const handleImpersonate = (u: UserProfile) => {
+  const handleImpersonate = async (u: UserProfile) => {
     if (u.role === 'gate_staff') {
-      loginAsGateStaff(u.name, u.regNumber, u.department);
+      await loginAsGateStaff(u.name, u.regNumber, u.department);
       navigate('/verify');
     } else if (u.role === 'student') {
-      loginAsStudent(u.name, u.regNumber, u.department, u.year);
+      await loginAsStudent(u.name, u.regNumber, u.department, u.year);
       navigate('/events');
     } else {
-      loginAsAdmin(u.name, u.regNumber, u.department);
+      await loginAsAdmin(u.name, u.regNumber, u.department);
       navigate('/admin');
     }
   };

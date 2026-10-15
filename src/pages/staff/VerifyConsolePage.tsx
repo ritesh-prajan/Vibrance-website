@@ -28,7 +28,7 @@ export const VerifyConsolePage: React.FC = () => {
     setIsScanning(true);
     setLastScanResult(null);
     await new Promise((r) => setTimeout(r, 380));
-    const result = verifyTicket(q, staff);
+    const result = await verifyTicket(q, staff);
     setLastScanResult(result);
     setIsScanning(false);
     setScanQuery('');

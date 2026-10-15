@@ -82,7 +82,7 @@ export const SeatSelectionPage: React.FC = () => {
     }
   };
 
-  const handleProceedToCheckout = () => {
+  const handleProceedToCheckout = async () => {
     if (!selectedSeat) return;
 
     // Check latest real-time status in database/context
@@ -101,7 +101,7 @@ export const SeatSelectionPage: React.FC = () => {
     }
 
     // Acquire lock at checkout transition
-    const ok = selectSeatForBooking(event, latestSeat);
+    const ok = await selectSeatForBooking(event, latestSeat);
     if (!ok) {
       const nearby = findNearbyAvailableSeats(event, latestSeat, 3);
       setConflictData({

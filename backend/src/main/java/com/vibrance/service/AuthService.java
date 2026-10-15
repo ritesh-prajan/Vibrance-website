@@ -18,7 +18,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class AuthService {
@@ -46,9 +49,36 @@ public class AuthService {
 
         String regNumber = req.getRegNumber().trim();
 
-        // 1. Check if user exists
-        User user = userRepository.findByRegNumber(regNumber)
-                .orElseThrow(() -> new UnauthorizedException("Invalid registration number or password"));
+        // 1. Check if user exists, auto-provision if new persona
+        User user = userRepository.findByRegNumber(regNumber).orElse(null);
+        if (user == null) {
+            String role = (req.getRole() != null && !req.getRole().trim().isEmpty())
+                    ? req.getRole().trim().toLowerCase()
+                    : (regNumber.toUpperCase().contains("ADMIN") || regNumber.toUpperCase().contains("FAC")
+                        ? "admin"
+                        : (regNumber.toUpperCase().contains("STF") || regNumber.toUpperCase().contains("GATE")
+                            ? "gate_staff"
+                            : "student"));
+
+            String name = (req.getName() != null && !req.getName().trim().isEmpty())
+                    ? req.getName().trim()
+                    : "Attendee " + regNumber;
+
+            String dept = (req.getDepartment() != null && !req.getDepartment().trim().isEmpty())
+                    ? req.getDepartment().trim()
+                    : "General Campus";
+
+            user = new User();
+            user.setRegNumber(regNumber);
+            user.setName(name);
+            user.setEmail(regNumber.toLowerCase() + "@vibrance.edu");
+            user.setPasswordHash(passwordEncoder.encode(req.getPassword() != null ? req.getPassword() : "vibrance2026"));
+            user.setRole(role);
+            user.setDepartment(dept);
+            user.setYearOfStudy(role.equals("student") ? "3rd Year (B.Tech)" : "Staff Lead");
+            user.setAvatarSeed(name.toLowerCase().split(" ")[0]);
+            user = userRepository.save(user);
+        }
 
         // 2. Persona quick switch / password bypass for known seeded demo personas if no password provided
         boolean passwordProvided = req.getPassword() != null && !req.getPassword().trim().isEmpty();
@@ -116,6 +146,21 @@ public class AuthService {
         User user = userRepository.findByRegNumber(regNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with registration number: " + regNumber));
         return toDTO(user);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserDTO> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void deleteUser(UUID id) {
+        if (!userRepository.existsById(id)) {
+            throw new ResourceNotFoundException("User not found with id: " + id);
+        }
+        userRepository.deleteById(id);
     }
 
     public UserDTO toDTO(User user) {
