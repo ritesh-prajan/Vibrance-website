@@ -23,6 +23,8 @@ import {
   generateSeatsForEvent,
 } from '../data/mockEvents';
 import { getEventTiming } from '../utils/timeUtils';
+import { useBackendSync, mapEventDTOtoFestEvent } from '../hooks/useBackendSync';
+
 
 const STORAGE_KEYS = {
   USER: 'vibrance26_current_user',
@@ -114,6 +116,9 @@ interface FestContextType {
 const FestContext = createContext<FestContextType | undefined>(undefined);
 
 export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // ── Backend sync (non-blocking, graceful fallback) ─────────────────────────
+  const backendSync = useBackendSync();
+
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
 
   const [users, setUsers] = useState<UserProfile[]>(() => {
@@ -248,6 +253,21 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAuditLogs((prev) => [newEntry, ...prev.slice(0, 200)]);
   }, []);
 
+  // ── Sync backend events into local state ─────────────────────────────────────
+  useEffect(() => {
+    if (backendSync.liveEvents && backendSync.liveEvents.length > 0) {
+      setEvents((prev) => {
+        const backendMapped = backendSync.liveEvents!.map(
+          (e) => mapEventDTOtoFestEvent(e) as unknown as FestEvent
+        );
+        // Merge: prefer backend events (real DB), keep any local-only events
+        const backendIds = new Set(backendMapped.map((e) => e.id));
+        const localOnly = prev.filter((e) => !backendIds.has(e.id));
+        return [...backendMapped, ...localOnly];
+      });
+    }
+  }, [backendSync.liveEvents]);
+
   // Live Timer countdown for held seats
   useEffect(() => {
     const interval = setInterval(() => {
@@ -275,6 +295,16 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       avatarSeed: name,
     };
     setCurrentUser(user);
+    // Also authenticate with backend (non-blocking) to get real JWT
+    backendSync.loginWithBackend(regNumber).then((auth) => {
+      if (auth) {
+        setCurrentUser((prev) => prev ? {
+          ...prev,
+          id: auth.user.id,
+          avatarSeed: auth.user.avatarSeed ?? name,
+        } : prev);
+      }
+    }).catch(() => {/* ignore — fallback to local */});
   };
 
   const loginAsGateStaff = (name = 'Officer Rajesh Menon', regNumber = 'STF-GATE-04', dept = 'Main Gate Security') => {
@@ -288,6 +318,7 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       avatarSeed: name,
     };
     setCurrentUser(user);
+    backendSync.loginWithBackend(regNumber).catch(() => {/* ignore */});
   };
 
   const loginAsAdmin = (name = 'Dr. Ramesh Sundaram', regNumber = 'FAC-DBMS-702', dept = 'Computer Science & Engineering') => {
@@ -534,6 +565,16 @@ export const FestProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!event) return null;
 
     await new Promise((r) => setTimeout(r, 450));
+
+    // Fire backend booking creation (non-blocking — local state is the source of truth for UI)
+    backendSync.createBookingWithBackend({
+      eventId: event.id,
+      seatId: activeSeat.id,
+      name: details.name,
+      regNumber: details.regNumber,
+      department: details.department,
+      paymentMethod: details.paymentMethod,
+    }).catch(() => {/* backend offline — local booking still stored */});
 
     const bookingRef = `VIB26-${event.category.substring(0, 3)}-${Math.floor(100000 + Math.random() * 900000)}`;
     const timing = getEventTiming(event);

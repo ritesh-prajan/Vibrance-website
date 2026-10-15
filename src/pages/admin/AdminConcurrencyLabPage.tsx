@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useFest } from '../../context/FestContext';
 import { ConcurrencyStrategy, SimulatedTx, ConcurrencyRunResult } from '../../types';
 import { StatusBadge } from '../../components/common/StatusBadge';
+import { GlassCard } from '../../components/common/GlassCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCountUp } from '../../hooks/useCountUp';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
@@ -615,3 +616,4 @@ export const AdminConcurrencyLabPage: React.FC = () => {
     </div>
   );
 };
+
