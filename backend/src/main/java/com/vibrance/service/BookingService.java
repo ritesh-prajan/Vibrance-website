@@ -8,6 +8,7 @@ import com.vibrance.entity.User;
 import com.vibrance.exception.BadRequestException;
 import com.vibrance.exception.ConflictException;
 import com.vibrance.exception.ResourceNotFoundException;
+import com.vibrance.exception.UnauthorizedException;
 import com.vibrance.repository.BookingRepository;
 import com.vibrance.repository.EventRepository;
 import com.vibrance.repository.SeatRepository;
@@ -64,7 +65,7 @@ public class BookingService {
 
         String seatCode = seat.getRowLabel() + seat.getSeatNumber();
 
-        // 2. Resolve User
+        // 2. Resolve Authenticated User
         User user = null;
         if (userId != null) {
             user = userRepository.findById(userId).orElse(null);
@@ -73,16 +74,7 @@ public class BookingService {
             user = userRepository.findByRegNumber(req.getRegNumber().trim()).orElse(null);
         }
         if (user == null) {
-            // Create guest student account if not present
-            user = new User();
-            user.setRegNumber(req.getRegNumber() != null ? req.getRegNumber().trim().toUpperCase() : "GUEST-" + generateRandomString(4));
-            user.setName(req.getName() != null ? req.getName().trim() : "Student Attendee");
-            user.setEmail(user.getRegNumber().toLowerCase() + "@vibrance2026.fest");
-            user.setRole("student");
-            user.setDepartment(req.getDepartment() != null ? req.getDepartment() : "General");
-            user.setYearOfStudy("3rd Year");
-            user.setPasswordHash("$2a$10$wO08yS8iCq2f.oV1kC7d8eG8uQ5r6uWwX6uN6vD3n1f5oT6hN0aTu"); // demo hash
-            user = userRepository.save(user);
+            throw new UnauthorizedException("User must be authenticated to purchase tickets. Please log in first.");
         }
 
         // 3. Concurrency / Collision Checks
@@ -113,11 +105,13 @@ public class BookingService {
 
         // 5. Generate Booking Reference and QR Payload
         String bookingRef = "VIB26-" + generateRandomString(6);
-        String qrPayload = String.format("{\"ticketId\":\"%s\",\"ref\":\"%s\",\"event\":\"%s\",\"seat\":\"%s\",\"attendee\":\"%s\"}",
-                UUID.randomUUID(), bookingRef, event.getEventCode(), seatCode, user.getRegNumber());
+        String ticketToken = UUID.randomUUID().toString().replace("-", "") + generateRandomString(16);
+        String qrPayload = String.format("{\"ticketId\":\"%s\",\"token\":\"%s\",\"ref\":\"%s\",\"event\":\"%s\",\"seat\":\"%s\",\"attendee\":\"%s\"}",
+                UUID.randomUUID(), ticketToken, bookingRef, event.getEventCode(), seatCode, user.getRegNumber());
 
         Booking booking = new Booking();
         booking.setBookingRef(bookingRef);
+        booking.setTicketToken(ticketToken);
         booking.setEvent(event);
         booking.setSeat(seat);
         booking.setUser(user);
@@ -166,35 +160,52 @@ public class BookingService {
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void cancelBooking(UUID bookingId, UUID userId) {
-        Booking booking = bookingRepository.findById(bookingId)
+        if (userId == null) {
+            throw new UnauthorizedException("User must be authenticated to cancel bookings");
+        }
+
+        Booking booking = bookingRepository.findByIdWithPessimisticLock(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + bookingId));
 
-        if (userId != null && !booking.getUser().getId().equals(userId)) {
-            // Check if user is admin or booking owner
-            User reqUser = userRepository.findById(userId).orElse(null);
-            if (reqUser == null || !"admin".equalsIgnoreCase(reqUser.getRole())) {
-                throw new BadRequestException("Unauthorized to cancel this booking");
-            }
+        User reqUser = userRepository.findById(userId)
+                .orElseThrow(() -> new UnauthorizedException("Authenticated user not found"));
+        boolean isAdmin = "admin".equalsIgnoreCase(reqUser.getRole());
+        boolean isOwner = booking.getUser() != null && booking.getUser().getId().equals(userId);
+
+        if (!isAdmin && !isOwner) {
+            throw new BadRequestException("Unauthorized: You can only cancel your own bookings");
         }
 
         if ("checked_in".equalsIgnoreCase(booking.getStatus())) {
             throw new ConflictException("Cannot cancel an already checked-in ticket pass.");
         }
+        if ("cancelled".equalsIgnoreCase(booking.getStatus())) {
+            throw new ConflictException("This booking has already been cancelled.");
+        }
 
         booking.setStatus("cancelled");
         bookingRepository.save(booking);
 
-        // Release seat back to available
-        Seat seat = booking.getSeat();
-        if (seat != null) {
-            seat.setStatus("available");
-            seat.setLockedBy(null);
-            seat.setLockExpiresAt(null);
-            seatRepository.save(seat);
+        // Safely release seat back to available with exclusive row lock
+        if (booking.getSeat() != null) {
+            UUID seatId = booking.getSeat().getId();
+            Seat seat = seatRepository.findByIdWithPessimisticLock(seatId).orElse(null);
+            if (seat != null) {
+                // Ensure no other active booking exists for this seat before releasing
+                boolean hasActiveBooking = bookingRepository.existsActiveBookingForSeat(seatId);
+                if (!hasActiveBooking) {
+                    seat.setStatus("available");
+                    seat.setLockedBy(null);
+                    seat.setLockExpiresAt(null);
+                    seatRepository.save(seat);
+                }
+            }
         }
 
+        Seat bookingSeat = booking.getSeat();
+        String seatLabel = bookingSeat != null ? bookingSeat.getRowLabel() + bookingSeat.getSeatNumber() : "N/A";
         auditService.recordLog("TICKET_CANCELLED", booking.getEvent().getId(), booking.getEvent().getTitle(),
-                seat != null ? seat.getRowLabel() + seat.getSeatNumber() : "N/A",
+                seatLabel,
                 booking.getStudentName(), booking.getRegNumber(), "CANCELLED", "2PL_ROLLBACK",
                 "Booking pass " + booking.getBookingRef() + " cancelled and seat refunded to available inventory");
     }

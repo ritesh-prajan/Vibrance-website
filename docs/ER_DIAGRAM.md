@@ -18,6 +18,7 @@ erDiagram
     SEATS ||--o{ BOOKINGS : "reserved_by"
     BOOKINGS ||--o{ SCAN_RECORDS : "validates"
     CONCURRENCY_SIM_RUNS ||--|{ CONCURRENCY_SIM_TXS : "executes"
+    CONCURRENCY_SIM_RUNS ||--o{ SIM_SEATS : "isolates_contention"
 
     USERS {
         uuid id PK "UUID Primary Key"
@@ -69,11 +70,24 @@ erDiagram
         timestamptz updated_at "Record Update Timestamp"
     }
 
+    SIM_SEATS {
+        uuid id PK "UUID Primary Key (gen_random_uuid())"
+        varchar run_id "Benchmark Run Identifier (Indexed)"
+        varchar event_title "Snapshot of Event Title"
+        varchar seat_label "Target Seat Coordinate (e.g. SIM-HOT-01)"
+        varchar status "available | locked | booked"
+        varchar claimed_by "Winning Virtual Client Thread ID"
+        bigint version "OCC Row Version Counter (@Version)"
+        timestamptz created_at "Allocation Timestamp"
+        timestamptz updated_at "Commit Timestamp"
+    }
+
     BOOKINGS {
         uuid id PK "UUID Primary Key"
         varchar booking_ref UK "Human-friendly Reference (e.g. VIB26-EDM-104928)"
+        varchar ticket_token UK "Anti-tamper Cryptographic Verification Token (Indexed)"
         uuid event_id FK "References events(id) ON DELETE RESTRICT"
-        uuid seat_id FK "References seats(id) ON DELETE RESTRICT"
+        uuid seat_id FK "References seats(id) ON DELETE RESTRICT (Partial Unique: uq_active_seat_booking)"
         uuid user_id FK "References users(id) ON DELETE RESTRICT"
         varchar student_name "Attendee Full Name"
         varchar reg_number "Student Registration Number"

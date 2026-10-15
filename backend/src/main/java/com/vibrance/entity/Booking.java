@@ -58,6 +58,9 @@ public class Booking {
     @Column(name = "checked_in_at")
     private OffsetDateTime checkedInAt;
 
+    @Column(name = "ticket_token", length = 64)
+    private String ticketToken;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "checked_in_by_user_id")
     private User checkedInBy;
@@ -136,4 +139,7 @@ public class Booking {
 
     public User getCheckedInBy() { return checkedInBy; }
     public void setCheckedInBy(User checkedInBy) { this.checkedInBy = checkedInBy; }
+
+    public String getTicketToken() { return ticketToken; }
+    public void setTicketToken(String ticketToken) { this.ticketToken = ticketToken; }
 }

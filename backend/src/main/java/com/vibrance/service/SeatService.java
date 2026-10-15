@@ -5,6 +5,7 @@ import com.vibrance.entity.Seat;
 import com.vibrance.entity.User;
 import com.vibrance.exception.ConflictException;
 import com.vibrance.exception.ResourceNotFoundException;
+import com.vibrance.exception.UnauthorizedException;
 import com.vibrance.repository.SeatRepository;
 import com.vibrance.repository.UserRepository;
 import org.slf4j.Logger;
@@ -57,11 +58,11 @@ public class SeatService {
         Seat seat = seatRepository.findByIdWithPessimisticLock(seatId)
                 .orElseThrow(() -> new ResourceNotFoundException("Seat not found: " + seatId));
 
-        User user = null;
-        if (userId != null) {
-            user = userRepository.findById(userId)
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+        if (userId == null) {
+            throw new UnauthorizedException("User must be authenticated to reserve or lock seats.");
         }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
 
         String seatCode = seat.getRowLabel() + seat.getSeatNumber();
         String eventTitle = seat.getEvent() != null ? seat.getEvent().getTitle() : "Event";

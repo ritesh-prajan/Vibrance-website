@@ -34,9 +34,4 @@ public interface SeatRepository extends JpaRepository<Seat, UUID> {
     @Modifying
     @Query("UPDATE Seat s SET s.status = 'available', s.lockedBy = null, s.lockExpiresAt = null, s.updatedAt = :now WHERE s.status = 'locked' AND s.lockExpiresAt < :now")
     int releaseExpiredLocks(@Param("now") OffsetDateTime now);
-
-    // Direct Uncontrolled Update for NO_LOCKING Benchmark Simulation (Demonstrates Lost Update / Overbooking)
-    @Modifying
-    @Query(value = "UPDATE seats SET status = 'booked', version = version + 1 WHERE id = :id", nativeQuery = true)
-    int executeUnsafeNoLockBooking(@Param("id") UUID id);
 }

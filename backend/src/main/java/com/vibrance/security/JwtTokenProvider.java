@@ -24,6 +24,18 @@ public class JwtTokenProvider {
     @Value("${app.jwt.expiration-ms:86400000}")
     private long jwtExpirationMs;
 
+    @jakarta.annotation.PostConstruct
+    public void validateKeyConfiguration() {
+        if (jwtSecret == null || jwtSecret.trim().isEmpty()) {
+            throw new IllegalStateException("FATAL: JWT signing secret (app.jwt.secret) must not be empty");
+        }
+        byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
+        if (keyBytes.length < 32) {
+            throw new IllegalStateException("FATAL: JWT secret key must be at least 256 bits (32 bytes) for HMAC-SHA256");
+        }
+        log.info("JwtTokenProvider initialized with verified 256-bit cryptographic signing key.");
+    }
+
     private SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
         return Keys.hmacShaKeyFor(keyBytes);

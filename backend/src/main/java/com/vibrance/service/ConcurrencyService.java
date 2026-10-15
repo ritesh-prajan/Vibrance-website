@@ -5,10 +5,12 @@ import com.vibrance.entity.ConcurrencySimRun;
 import com.vibrance.entity.ConcurrencySimTx;
 import com.vibrance.entity.Event;
 import com.vibrance.entity.Seat;
+import com.vibrance.entity.SimSeat;
 import com.vibrance.repository.ConcurrencySimRunRepository;
 import com.vibrance.repository.ConcurrencySimTxRepository;
 import com.vibrance.repository.EventRepository;
 import com.vibrance.repository.SeatRepository;
+import com.vibrance.repository.SimSeatRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -32,6 +34,7 @@ public class ConcurrencyService {
     private final ConcurrencySimTxRepository txRepository;
     private final EventRepository eventRepository;
     private final SeatRepository seatRepository;
+    private final SimSeatRepository simSeatRepository;
     private final PlatformTransactionManager transactionManager;
     private final AuditService auditService;
 
@@ -39,52 +42,45 @@ public class ConcurrencyService {
                               ConcurrencySimTxRepository txRepository,
                               EventRepository eventRepository,
                               SeatRepository seatRepository,
+                              SimSeatRepository simSeatRepository,
                               PlatformTransactionManager transactionManager,
                               AuditService auditService) {
         this.runRepository = runRepository;
         this.txRepository = txRepository;
         this.eventRepository = eventRepository;
         this.seatRepository = seatRepository;
+        this.simSeatRepository = simSeatRepository;
         this.transactionManager = transactionManager;
         this.auditService = auditService;
     }
 
     public ConcurrencyDTO.ConcurrencyRunResultDTO runSimulation(ConcurrencyDTO.ConcurrencySimRequest req) {
         String strategy = req.getStrategy() != null ? req.getStrategy().toUpperCase() : "TWO_PHASE_LOCKING";
-        int concurrencyLevel = req.getConcurrencyLevel() != null && req.getConcurrencyLevel() > 0 ? req.getConcurrencyLevel() : 25;
+        // Bound concurrency level between 2 and 50 to prevent JVM resource starvation
+        int concurrencyLevel = Math.min(Math.max(req.getConcurrencyLevel() != null ? req.getConcurrencyLevel() : 25, 2), 50);
 
-        // 1. Resolve Target Event
+        // 1. Resolve Target Event (read-only reference metadata)
         Event event = null;
         if (req.getTargetEventId() != null) {
             event = eventRepository.findById(req.getTargetEventId()).orElse(null);
         }
         if (event == null) {
             event = eventRepository.findByEventCode("EVT-CYBER26")
-                    .orElseGet(() -> eventRepository.findAll().stream().findFirst().orElseThrow());
+                    .orElseGet(() -> eventRepository.findAll().stream().findFirst().orElse(null));
         }
 
-        UUID eventId = event.getId();
-        String eventTitle = event.getTitle();
-
-        // 2. Select a target contention seat (or make one available for this benchmark)
-        List<Seat> eventSeats = seatRepository.findByEventIdOrderByRowLabelAscSeatNumberAsc(eventId);
-        Seat targetSeat = eventSeats.stream()
-                .filter(s -> "available".equalsIgnoreCase(s.getStatus()))
-                .findFirst()
-                .orElseGet(() -> {
-                    // Reset a test seat to available if all booked
-                    Seat fallback = eventSeats.get(eventSeats.size() - 1);
-                    fallback.setStatus("available");
-                    fallback.setLockedBy(null);
-                    fallback.setLockExpiresAt(null);
-                    return seatRepository.save(fallback);
-                });
-
-        UUID targetSeatId = targetSeat.getId();
-        String targetSeatLabel = targetSeat.getRowLabel() + targetSeat.getSeatNumber();
-        int initialStock = 1; // 1 available high-demand seat under heavy concurrent contention
+        UUID eventId = event != null ? event.getId() : UUID.randomUUID();
+        String eventTitle = event != null ? event.getTitle() : "Vibrance 2026 Sandbox Event";
 
         String runId = "RUN-" + System.currentTimeMillis() + "-" + strategy.substring(0, Math.min(strategy.length(), 6));
+        String targetSeatLabel = "SIM-HOT-01";
+        int initialStock = 1; // 1 available high-demand seat under heavy concurrent contention
+
+        // 2. Provision Isolated Simulation Dataset in sim_seats (Never touches genuine event inventory!)
+        SimSeat simSeat = new SimSeat(runId, eventTitle, targetSeatLabel, "available");
+        simSeat = simSeatRepository.save(simSeat);
+        UUID targetSeatId = simSeat.getId();
+
         List<ConcurrencyDTO.SimulatedTxDTO> txResults = Collections.synchronizedList(new ArrayList<>());
         List<String> dbLogs = Collections.synchronizedList(new ArrayList<>());
 
@@ -93,7 +89,7 @@ public class ConcurrencyService {
         AtomicInteger deadlockCount = new AtomicInteger(0);
 
         dbLogs.add(String.format("[INIT] Simulation %s initialized with %d concurrent worker threads", runId, concurrencyLevel));
-        dbLogs.add(String.format("[TARGET] Contention focus: Event '%s' | Hot Seat: %s (Stock: %d)", eventTitle, targetSeatLabel, initialStock));
+        dbLogs.add(String.format("[TARGET] Contention focus: Event '%s' | Isolated Sim Seat: %s (Stock: %d)", eventTitle, targetSeatLabel, initialStock));
         dbLogs.add(String.format("[STRATEGY] Isolation Engine: %s", strategy));
 
         long startTime = System.currentTimeMillis();
@@ -226,38 +222,37 @@ public class ConcurrencyService {
 
     /**
      * Uncontrolled Concurrent Access (NO_LOCKING).
-     * Simulates client race condition without pessimistic or optimistic locks.
-     * Demonstrates lost updates and overbooking in relational DBMS.
+     * Simulates client race condition without pessimistic or optimistic locks on isolated SimSeat.
+     * Demonstrates lost updates and overbooking in relational DBMS without corrupting real inventory.
      */
     private void executeNoLockTransaction(UUID seatId, String seatLabel, ConcurrencyDTO.SimulatedTxDTO txDto,
                                           AtomicInteger successCount, AtomicInteger rejectedCount, List<String> dbLogs) {
         try {
             // Step 1: Read without locks
-            Seat seat = seatRepository.findById(seatId).orElse(null);
+            SimSeat seat = simSeatRepository.findById(seatId).orElse(null);
             txDto.setCurrentStep("READ_UNCOMMITTED");
 
             // Step 2: Race condition delay (simulates network latency & concurrent context switch)
             Thread.sleep(15 + (int) (Math.random() * 20));
 
-            // Step 3: Unsafe Blind Write
+            // Step 3: Unsafe Blind Write on isolated simulation record
             if (seat != null) {
-                // Execute unsafe direct update
-                seatRepository.executeUnsafeNoLockBooking(seatId);
+                simSeatRepository.executeUnsafeNoLockSimulationBooking(seatId, txDto.getClientName());
                 int currentSuccess = successCount.incrementAndGet();
                 txDto.setStatus("COMMITTED");
                 txDto.setCurrentStep("UNSAFE_WRITE_COMMITTED");
                 txDto.setSeatClaimed(seatLabel);
-                txDto.setMessage("Ticket confirmed without lock validation");
+                txDto.setMessage("Simulation pass confirmed without lock validation");
 
                 if (currentSuccess > 1) {
-                    dbLogs.add(String.format("[%s] OVERBOOKING ANOMALY: Overwrote seat %s without concurrency check!", txDto.getTxId(), seatLabel));
+                    dbLogs.add(String.format("[%s] OVERBOOKING ANOMALY: Overwrote simulation seat %s without concurrency check!", txDto.getTxId(), seatLabel));
                 } else {
-                    dbLogs.add(String.format("[%s] Unchecked write committed on Seat %s", txDto.getTxId(), seatLabel));
+                    dbLogs.add(String.format("[%s] Unchecked write committed on simulation seat %s", txDto.getTxId(), seatLabel));
                 }
             } else {
                 rejectedCount.incrementAndGet();
                 txDto.setStatus("REJECTED");
-                txDto.setMessage("Seat not found");
+                txDto.setMessage("Simulation seat not found");
             }
         } catch (Exception e) {
             rejectedCount.incrementAndGet();
@@ -268,7 +263,7 @@ public class ConcurrencyService {
 
     /**
      * Strict Two-Phase Locking (2PL).
-     * Acquires PESSIMISTIC_WRITE lock (SELECT FOR UPDATE) within an isolated database transaction.
+     * Acquires PESSIMISTIC_WRITE lock (SELECT FOR UPDATE) on SimSeat within an isolated database transaction.
      * Ensures strict serializability and prevents all lost updates / overbooking.
      */
     private void executeTwoPhaseLockTransaction(UUID seatId, String seatLabel, ConcurrencyDTO.SimulatedTxDTO txDto,
@@ -279,46 +274,43 @@ public class ConcurrencyService {
         txTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 
         try {
-            txTemplate.execute(status -> {
+            Boolean committed = txTemplate.execute(status -> {
                 txDto.setCurrentStep("ACQUIRING_PESSIMISTIC_LOCK");
-                dbLogs.add(String.format("[%s] Executing: SELECT * FROM seats WHERE id = '%s' FOR UPDATE", txDto.getTxId(), seatId));
+                dbLogs.add(String.format("[%s] Executing: SELECT * FROM sim_seats WHERE id = '%s' FOR UPDATE", txDto.getTxId(), seatId));
 
-                // 2PL Phase 1: Growing Phase (Acquire exclusive lock on seat row)
-                Optional<Seat> seatOpt = seatRepository.findByIdWithPessimisticLock(seatId);
+                // 2PL Phase 1: Growing Phase (Acquire exclusive lock on simulation seat row)
+                Optional<SimSeat> seatOpt = simSeatRepository.findByIdWithPessimisticLock(seatId);
                 if (seatOpt.isEmpty()) {
-                    rejectedCount.incrementAndGet();
-                    txDto.setStatus("REJECTED");
-                    txDto.setMessage("Seat not found");
-                    return null;
+                    return false;
                 }
 
-                Seat seat = seatOpt.get();
+                SimSeat seat = seatOpt.get();
                 // Check if already booked
                 if ("booked".equalsIgnoreCase(seat.getStatus())) {
-                    rejectedCount.incrementAndGet();
-                    txDto.setStatus("REJECTED");
                     txDto.setCurrentStep("LOCK_RELEASED_COLLISION");
-                    txDto.setMessage("Seat locked by prior committed transaction");
-                    dbLogs.add(String.format("[%s] Collision: Seat %s is already claimed. Transaction rolled back.", txDto.getTxId(), seatLabel));
-                    return null;
+                    dbLogs.add(String.format("[%s] Collision: Simulation seat %s is already claimed. Transaction rolled back.", txDto.getTxId(), seatLabel));
+                    return false;
                 }
 
                 // First transaction to acquire lock successfully claims seat
                 seat.setStatus("booked");
-                seat.setLockedBy(null);
-                seat.setLockExpiresAt(null);
-                seatRepository.save(seat);
+                seat.setClaimedBy(txDto.getClientName());
+                simSeatRepository.saveAndFlush(seat);
+                return true;
+            });
 
+            if (Boolean.TRUE.equals(committed)) {
                 successCount.incrementAndGet();
                 txDto.setStatus("COMMITTED");
                 txDto.setCurrentStep("EXCLUSIVE_LOCK_COMMITTED");
                 txDto.setSeatClaimed(seatLabel);
-                txDto.setMessage("Acquired row-level lock and booked seat safely");
-                dbLogs.add(String.format("[%s] Lock acquired. UPDATE seats SET status = 'booked' -> COMMIT", txDto.getTxId()));
-
-                // 2PL Phase 2: Shrinking Phase (Lock released at transaction commit)
-                return null;
-            });
+                txDto.setMessage("Acquired row-level lock and booked simulation seat safely");
+                dbLogs.add(String.format("[%s] Lock acquired. UPDATE sim_seats SET status = 'booked' -> COMMIT", txDto.getTxId()));
+            } else {
+                rejectedCount.incrementAndGet();
+                txDto.setStatus("REJECTED");
+                txDto.setMessage("Simulation seat already claimed or unavailable");
+            }
         } catch (org.springframework.dao.PessimisticLockingFailureException e) {
             deadlockCount.incrementAndGet();
             rejectedCount.incrementAndGet();
@@ -335,7 +327,7 @@ public class ConcurrencyService {
 
     /**
      * Optimistic Concurrency Control (OCC).
-     * Validates JPA entity @Version before commit.
+     * Validates JPA entity @Version before commit on SimSeat.
      */
     private void executeOptimisticOccTransaction(UUID seatId, String seatLabel, ConcurrencyDTO.SimulatedTxDTO txDto,
                                                  AtomicInteger successCount, AtomicInteger rejectedCount,
@@ -345,30 +337,39 @@ public class ConcurrencyService {
         txTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 
         try {
-            txTemplate.execute(status -> {
+            Boolean committed = txTemplate.execute(status -> {
                 txDto.setCurrentStep("OCC_READ_PHASE");
-                Seat seat = seatRepository.findById(seatId).orElse(null);
+                SimSeat seat = simSeatRepository.findById(seatId).orElse(null);
                 if (seat == null || "booked".equalsIgnoreCase(seat.getStatus())) {
-                    rejectedCount.incrementAndGet();
-                    txDto.setStatus("REJECTED");
-                    txDto.setMessage("Seat already taken");
-                    return null;
+                    return false;
                 }
+
+                // Small pause to guarantee concurrent contenders read the same initial version
+                try {
+                    Thread.sleep(10 + (int) (Math.random() * 15));
+                } catch (InterruptedException ignored) {}
 
                 // OCC Validation & Write Phase
                 txDto.setCurrentStep("OCC_VALIDATION_PHASE");
                 seat.setStatus("booked");
-                seatRepository.save(seat); // Throws ObjectOptimisticLockingFailureException if version mismatch
+                seat.setClaimedBy(txDto.getClientName());
+                simSeatRepository.saveAndFlush(seat); // Throws optimistic lock exception on version conflict
+                return true;
+            });
 
+            if (Boolean.TRUE.equals(committed)) {
                 successCount.incrementAndGet();
                 txDto.setStatus("COMMITTED");
                 txDto.setCurrentStep("OCC_WRITE_COMMITTED");
                 txDto.setSeatClaimed(seatLabel);
                 txDto.setMessage("Version verified: commit successful");
-                dbLogs.add(String.format("[%s] OCC Validation passed (Version %d). Committed.", txDto.getTxId(), seat.getVersion()));
-                return null;
-            });
-        } catch (ObjectOptimisticLockingFailureException e) {
+                dbLogs.add(String.format("[%s] OCC Validation passed. Committed.", txDto.getTxId()));
+            } else {
+                rejectedCount.incrementAndGet();
+                txDto.setStatus("REJECTED");
+                txDto.setMessage("Simulation seat already taken");
+            }
+        } catch (org.springframework.dao.OptimisticLockingFailureException | jakarta.persistence.OptimisticLockException e) {
             rejectedCount.incrementAndGet();
             txDto.setStatus("REJECTED");
             txDto.setCurrentStep("OCC_VERSION_MISMATCH_ABORT");

@@ -136,11 +136,38 @@ public class ScanService {
                     rawQuery, staff, booking.getId(), bookingRef, eventTitle, attendee, seatLabel);
         }
 
-        // Case D: Valid Admission
-        booking.setStatus("checked_in");
-        booking.setCheckedInAt(now);
-        booking.setCheckedInBy(staff);
-        bookingRepository.save(booking);
+        // Case D: Valid Admission (Enforce atomic conditional database transition)
+        int updatedCount = bookingRepository.atomicCheckIn(booking.getId(), now, staff);
+        if (updatedCount == 0) {
+            // A concurrent scanner or race condition previously validated this ticket!
+            Booking updatedBooking = bookingRepository.findById(booking.getId()).orElse(booking);
+
+            ScanRecord scan = new ScanRecord();
+            scan.setQueryPayload(rawQuery);
+            scan.setResult("ALREADY_USED");
+            scan.setStaffUser(staff);
+            scan.setBooking(updatedBooking);
+            scan.setBookingRef(bookingRef);
+            scan.setEventTitle(eventTitle);
+            scan.setAttendeeName(attendee);
+            scan.setSeatLabel(seatLabel);
+            scan.setMessage("Concurrent check-in collision prevented. Ticket already validated.");
+            scan.setOriginalCheckedInAt(updatedBooking.getCheckedInAt());
+            scan.setOriginalCheckedInBy(updatedBooking.getCheckedInBy() != null ? updatedBooking.getCheckedInBy().getName() : staff.getName());
+            scan.setScannedAt(now);
+            scanRecordRepository.save(scan);
+
+            auditService.recordLog("DUPLICATE_SCAN_INTERCEPTED", booking.getEvent().getId(), eventTitle, seatLabel,
+                    attendee, booking.getRegNumber(), "ALREADY_USED", "GATE_TELEMETRY",
+                    "Atomic lock prevented duplicate check-in collision on pass " + bookingRef);
+
+            ScanDTO.ScanResponseDTO response = buildResponse(scan.getId(), "ALREADY_USED",
+                    "Duplicate entry intercepted! This ticket was validated by another scanner.",
+                    rawQuery, staff, booking.getId(), bookingRef, eventTitle, attendee, seatLabel);
+            response.setOriginalCheckedInAt(updatedBooking.getCheckedInAt() != null ? updatedBooking.getCheckedInAt().toInstant().toEpochMilli() : null);
+            response.setOriginalCheckedInBy(scan.getOriginalCheckedInBy());
+            return response;
+        }
 
         ScanRecord scan = new ScanRecord();
         scan.setQueryPayload(rawQuery);
@@ -187,6 +214,26 @@ public class ScanService {
         // Direct QR payload match
         Optional<Booking> byPayload = bookingRepository.findByQrPayload(query);
         if (byPayload.isPresent()) return byPayload.get();
+
+        // Direct Cryptographic Ticket Token match
+        Optional<Booking> byToken = bookingRepository.findByTicketToken(query);
+        if (byToken.isPresent()) return byToken.get();
+
+        // Extract token from JSON if scanned as JSON string
+        if (query.contains("\"token\"")) {
+            int tokenKeyIdx = query.indexOf("\"token\":");
+            if (tokenKeyIdx != -1) {
+                int firstQuote = query.indexOf("\"", tokenKeyIdx + 8);
+                if (firstQuote != -1) {
+                    int secondQuote = query.indexOf("\"", firstQuote + 1);
+                    if (secondQuote != -1) {
+                        String extractedToken = query.substring(firstQuote + 1, secondQuote);
+                        Optional<Booking> byExtractedToken = bookingRepository.findByTicketToken(extractedToken);
+                        if (byExtractedToken.isPresent()) return byExtractedToken.get();
+                    }
+                }
+            }
+        }
 
         // Extract VIB26-XXXX regex from JSON payload if raw scanned string
         Matcher matcher = REF_PATTERN.matcher(query);

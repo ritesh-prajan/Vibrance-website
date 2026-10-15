@@ -245,3 +245,50 @@ SELECT
 FROM audit_logs
 ORDER BY created_at DESC
 LIMIT 25;
+
+
+-- ====================================================================================================
+-- SECTION 7: V4 INTEGRITY HARDENING, CRYPTOGRAPHIC TOKENS & SIMULATION ISOLATION
+-- ====================================================================================================
+
+-- Query 7.1: Verify Partial Unique Index (uq_active_seat_booking)
+-- Proves that active seat bookings cannot be duplicated, while cancelled seats can be re-booked.
+SELECT 
+    indexname, 
+    indexdef 
+FROM pg_indexes 
+WHERE tablename = 'bookings' 
+  AND indexname IN ('uq_active_seat_booking', 'uq_bookings_ticket_token');
+
+-- Query 7.2: Verify Anti-Tamper Ticket Tokens for QR Check-in
+-- Shows high-entropy cryptographic tokens assigned to confirmed festival passes
+SELECT 
+    booking_ref, 
+    student_name, 
+    ticket_token, 
+    status, 
+    booked_at 
+FROM bookings 
+WHERE ticket_token IS NOT NULL 
+ORDER BY booked_at DESC 
+LIMIT 10;
+
+-- Query 7.3: Inspect Isolated Concurrency Benchmarks (sim_seats)
+-- Proves simulations run entirely in sim_seats without touching genuine seat inventory
+SELECT 
+    run_id, 
+    event_title, 
+    seat_label, 
+    status, 
+    claimed_by, 
+    version, 
+    updated_at 
+FROM sim_seats 
+ORDER BY updated_at DESC 
+LIMIT 10;
+
+-- Query 7.4: Atomic Gatekeeper Check-in Simulation Query
+-- Single-query test for race-free ticket consumption:
+-- UPDATE bookings SET status = 'checked_in', checked_in_at = NOW() 
+-- WHERE id = '<booking_uuid>' AND status = 'confirmed';
+

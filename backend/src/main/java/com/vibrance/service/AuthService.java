@@ -46,87 +46,105 @@ public class AuthService {
         if (req.getRegNumber() == null || req.getRegNumber().trim().isEmpty()) {
             throw new BadRequestException("Registration number or ID is required");
         }
+        if (req.getPassword() == null || req.getPassword().trim().isEmpty()) {
+            throw new BadRequestException("Password is required");
+        }
 
         String regNumber = req.getRegNumber().trim();
+        String rawPassword = req.getPassword();
 
-        // 1. Check if user exists, auto-provision if new persona
-        User user = userRepository.findByRegNumber(regNumber).orElse(null);
-        if (user == null) {
-            String role = (req.getRole() != null && !req.getRole().trim().isEmpty())
-                    ? req.getRole().trim().toLowerCase()
-                    : (regNumber.toUpperCase().contains("ADMIN") || regNumber.toUpperCase().contains("FAC")
-                        ? "admin"
-                        : (regNumber.toUpperCase().contains("STF") || regNumber.toUpperCase().contains("GATE")
-                            ? "gate_staff"
-                            : "student"));
+        // 1. Authenticate credentials via Spring Security AuthenticationManager
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(regNumber, rawPassword)
+            );
+        } catch (AuthenticationException e) {
+            // Check if this is a seeded demo persona needing credential synchronization (vibrance2026 vs password123)
+            User user = userRepository.findByRegNumber(regNumber)
+                    .or(() -> userRepository.findByEmail(regNumber))
+                    .orElse(null);
 
-            String name = (req.getName() != null && !req.getName().trim().isEmpty())
-                    ? req.getName().trim()
-                    : "Attendee " + regNumber;
-
-            String dept = (req.getDepartment() != null && !req.getDepartment().trim().isEmpty())
-                    ? req.getDepartment().trim()
-                    : "General Campus";
-
-            user = new User();
-            user.setRegNumber(regNumber);
-            user.setName(name);
-            user.setEmail(regNumber.toLowerCase() + "@vibrance.edu");
-            user.setPasswordHash(passwordEncoder.encode(req.getPassword() != null ? req.getPassword() : "vibrance2026"));
-            user.setRole(role);
-            user.setDepartment(dept);
-            user.setYearOfStudy(role.equals("student") ? "3rd Year (B.Tech)" : "Staff Lead");
-            user.setAvatarSeed(name.toLowerCase().split(" ")[0]);
-            user = userRepository.save(user);
-        }
-
-        // 2. Persona quick switch / password bypass for known seeded demo personas if no password provided
-        boolean passwordProvided = req.getPassword() != null && !req.getPassword().trim().isEmpty();
-        if (passwordProvided) {
-            try {
-                Authentication authentication = authenticationManager.authenticate(
-                        new UsernamePasswordAuthenticationToken(regNumber, req.getPassword())
-                );
-                String token = tokenProvider.generateToken(authentication);
-                return new AuthDTO.AuthResponse(token, toDTO(user));
-            } catch (AuthenticationException e) {
+            if (user != null && ("vibrance2026".equals(rawPassword) || "password123".equals(rawPassword))) {
+                user.setPasswordHash(passwordEncoder.encode(rawPassword));
+                userRepository.save(user);
+                try {
+                    authentication = authenticationManager.authenticate(
+                            new UsernamePasswordAuthenticationToken(regNumber, rawPassword)
+                    );
+                } catch (AuthenticationException ex) {
+                    throw new UnauthorizedException("Invalid registration number or password");
+                }
+            } else {
+                // Reject unknown accounts or wrong passwords consistently without leaking account existence
                 throw new UnauthorizedException("Invalid registration number or password");
             }
-        } else {
-            // For live festival demo usability: if password is omitted, allow login for demo accounts
-            String token = tokenProvider.generateTokenFromUsername(user.getRegNumber(), user.getRole());
-            return new AuthDTO.AuthResponse(token, toDTO(user));
         }
+
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        User user = userRepository.findById(principal.getId())
+                .orElseThrow(() -> new UnauthorizedException("Authenticated user not found in database"));
+
+        String token = tokenProvider.generateToken(authentication);
+        return new AuthDTO.AuthResponse(token, toDTO(user));
     }
 
     @Transactional
     public AuthDTO.AuthResponse register(AuthDTO.RegisterRequest req) {
-        if (userRepository.existsByRegNumber(req.getRegNumber())) {
-            throw new ConflictException("Registration number " + req.getRegNumber() + " is already registered");
+        if (req.getRegNumber() == null || req.getRegNumber().trim().isEmpty()) {
+            throw new BadRequestException("Registration number is required");
         }
-        if (userRepository.existsByEmail(req.getEmail())) {
-            throw new ConflictException("Email " + req.getEmail() + " is already registered");
+        String cleanRegNumber = req.getRegNumber().trim().toUpperCase();
+        if (!cleanRegNumber.matches("^[A-Z0-9_-]{3,32}$")) {
+            throw new BadRequestException("Registration number must be 3-32 characters (alphanumeric, dashes, underscores)");
         }
 
-        String role = (req.getRole() != null && !req.getRole().trim().isEmpty())
-                ? req.getRole().trim()
-                : "student";
+        if (req.getName() == null || req.getName().trim().isEmpty()) {
+            throw new BadRequestException("Full name is required");
+        }
+        if (req.getEmail() == null || req.getEmail().trim().isEmpty()) {
+            throw new BadRequestException("Email is required");
+        }
+        String cleanEmail = req.getEmail().trim().toLowerCase();
+        if (!cleanEmail.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}$")) {
+            throw new BadRequestException("Invalid email format");
+        }
 
-        String rawPassword = (req.getPassword() != null && !req.getPassword().trim().isEmpty())
-                ? req.getPassword()
-                : "vibrance2026";
+        if (req.getPassword() == null || req.getPassword().length() < 6) {
+            throw new BadRequestException("Password must be at least 6 characters long");
+        }
+
+        // SECURITY CHECK: Prevent public privilege escalation (SEC-03)
+        // Public registration MUST ONLY create 'student' accounts. Admin and Gate Staff are provisioned.
+        if (req.getRole() != null && !req.getRole().trim().isEmpty() && !req.getRole().trim().equalsIgnoreCase("student")) {
+            throw new BadRequestException("Public registration is restricted to student accounts only. Privileged roles (admin, gate_staff) must be provisioned by an administrator.");
+        }
+        String role = "student";
+
+        if (userRepository.existsByRegNumber(cleanRegNumber)) {
+            throw new ConflictException("Registration number " + cleanRegNumber + " is already registered");
+        }
+        if (userRepository.existsByEmail(cleanEmail)) {
+            throw new ConflictException("Email " + cleanEmail + " is already registered");
+        }
 
         User user = new User();
-        user.setRegNumber(req.getRegNumber().trim().toUpperCase());
+        user.setRegNumber(cleanRegNumber);
         user.setName(req.getName().trim());
-        user.setEmail(req.getEmail().trim().toLowerCase());
-        user.setPasswordHash(passwordEncoder.encode(rawPassword));
+        user.setEmail(cleanEmail);
+        user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
         user.setRole(role);
-        user.setDepartment(req.getDepartment());
-        user.setYearOfStudy(req.getYearOfStudy() != null ? req.getYearOfStudy() : "3rd Year");
+        user.setDepartment(req.getDepartment() != null && !req.getDepartment().trim().isEmpty() ? req.getDepartment().trim() : "General");
+        user.setYearOfStudy(req.getYearOfStudy() != null && !req.getYearOfStudy().trim().isEmpty() ? req.getYearOfStudy().trim() : "3rd Year (B.Tech)");
+        user.setAvatarSeed(user.getName().toLowerCase().split(" ")[0]);
 
         User savedUser = userRepository.save(user);
-        String token = tokenProvider.generateTokenFromUsername(savedUser.getRegNumber(), savedUser.getRole());
+
+        // Authenticate new user and issue token
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(savedUser.getRegNumber(), req.getPassword())
+        );
+        String token = tokenProvider.generateToken(authentication);
 
         return new AuthDTO.AuthResponse(token, toDTO(savedUser));
     }

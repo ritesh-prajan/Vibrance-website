@@ -28,39 +28,45 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen || !event || !seat) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
+    setErrorMessage(null);
 
-    // Visual step sequence for DBMS Presentation
-    setProcessingStep('1/3: Validating Exclusive Lease Lock (X-Lock)...');
-    await new Promise((r) => setTimeout(r, 350));
+    try {
+      // Visual step sequence for DBMS Presentation
+      setProcessingStep('1/3: Validating Exclusive Lease Lock (X-Lock)...');
+      await new Promise((r) => setTimeout(r, 350));
 
-    setProcessingStep('2/3: Executing Transaction & Write-Ahead Log (WAL)...');
-    await new Promise((r) => setTimeout(r, 400));
+      setProcessingStep('2/3: Executing Transaction & Write-Ahead Log (WAL)...');
+      await new Promise((r) => setTimeout(r, 400));
 
-    setProcessingStep('3/3: Committing ACID Transaction & Generating Pass...');
-    const result = await confirmBooking({
-      name: studentName,
-      regNumber,
-      department,
-      paymentMethod,
-    });
-
-    setIsProcessing(false);
-
-    if (result) {
-      // Trigger festive celebratory confetti
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#ccff00', '#00e5ff', '#ff3366', '#ffffff'],
+      setProcessingStep('3/3: Committing ACID Transaction & Generating Pass...');
+      const result = await confirmBooking({
+        name: studentName,
+        regNumber,
+        department,
+        paymentMethod,
       });
-      onBookingSuccess(result);
+
+      if (result) {
+        // Trigger festive celebratory confetti
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#ccff00', '#00e5ff', '#ff3366', '#ffffff'],
+        });
+        onBookingSuccess(result);
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Transaction aborted by database constraint or conflict.');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -104,6 +110,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {errorMessage && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-xl text-xs flex items-center gap-2 animate-in fade-in">
+              <X className="w-4 h-4 shrink-0 text-red-400" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
           {/* Selected Pass Summary Card */}
           <div className="bg-[#080a0f] p-4 rounded-2xl border border-white/10 flex items-center justify-between">
             <div>

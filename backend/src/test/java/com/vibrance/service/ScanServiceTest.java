@@ -83,15 +83,13 @@ class ScanServiceTest {
     void verifyTicket_Success_WhenValid() {
         when(userRepository.findById(staffId)).thenReturn(Optional.of(staff));
         when(bookingRepository.findByBookingRef("VIB26-PRO-984321")).thenReturn(Optional.of(booking));
+        when(bookingRepository.atomicCheckIn(any(), any(), any())).thenReturn(1);
 
         ScanDTO.ScanResponseDTO response = scanService.verifyAndCheckInTicket("VIB26-PRO-984321", staffId);
 
         assertNotNull(response);
         assertEquals("VALID", response.getResult());
-        assertEquals("checked_in", booking.getStatus());
-        assertEquals(staff, booking.getCheckedInBy());
-        assertNotNull(booking.getCheckedInAt());
-        verify(bookingRepository).save(booking);
+        verify(bookingRepository).atomicCheckIn(eq(booking.getId()), any(), eq(staff));
         verify(scanRecordRepository).save(any());
     }
 
@@ -110,7 +108,24 @@ class ScanServiceTest {
         assertNotNull(response);
         assertEquals("ALREADY_USED", response.getResult());
         assertTrue(response.getMessage().contains("previously validated"));
-        verify(bookingRepository, never()).save(any());
+        verify(bookingRepository, never()).atomicCheckIn(any(), any(), any());
+        verify(scanRecordRepository).save(any());
+    }
+
+    @Test
+    @DisplayName("Atomic collision interception: two concurrent scans resulting in exactly one admission")
+    void verifyTicket_Intercepts_ConcurrentCheckInCollision() {
+        when(userRepository.findById(staffId)).thenReturn(Optional.of(staff));
+        when(bookingRepository.findByBookingRef("VIB26-PRO-984321")).thenReturn(Optional.of(booking));
+        // Atomic check-in returns 0 indicating another scanner just committed this ticket
+        when(bookingRepository.atomicCheckIn(any(), any(), any())).thenReturn(0);
+        when(bookingRepository.findById(booking.getId())).thenReturn(Optional.of(booking));
+
+        ScanDTO.ScanResponseDTO response = scanService.verifyAndCheckInTicket("VIB26-PRO-984321", staffId);
+
+        assertNotNull(response);
+        assertEquals("ALREADY_USED", response.getResult());
+        assertTrue(response.getMessage().contains("Duplicate entry intercepted"));
         verify(scanRecordRepository).save(any());
     }
 
@@ -120,6 +135,7 @@ class ScanServiceTest {
         when(userRepository.findById(staffId)).thenReturn(Optional.of(staff));
         when(bookingRepository.findByBookingRef("VIB26-FAKE-000000")).thenReturn(Optional.empty());
         when(bookingRepository.findByQrPayload("VIB26-FAKE-000000")).thenReturn(Optional.empty());
+        when(bookingRepository.findByTicketToken("VIB26-FAKE-000000")).thenReturn(Optional.empty());
 
         ScanDTO.ScanResponseDTO response = scanService.verifyAndCheckInTicket("VIB26-FAKE-000000", staffId);
 

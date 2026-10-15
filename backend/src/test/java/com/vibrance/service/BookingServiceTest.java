@@ -5,6 +5,7 @@ import com.vibrance.entity.Booking;
 import com.vibrance.entity.Event;
 import com.vibrance.entity.Seat;
 import com.vibrance.entity.User;
+import com.vibrance.exception.BadRequestException;
 import com.vibrance.exception.ConflictException;
 import com.vibrance.repository.BookingRepository;
 import com.vibrance.repository.EventRepository;
@@ -159,5 +160,62 @@ class BookingServiceTest {
         assertNotNull(response);
         assertEquals("booked", seat.getStatus());
         assertNull(seat.getLockedBy());
+    }
+
+    @Test
+    @DisplayName("Cancel booking releases seat back to available inventory")
+    void cancelBooking_Success_ReleasesSeat() {
+        UUID bookingId = UUID.randomUUID();
+        Booking booking = new Booking("VIB26-EDM-999", event, seat, user, "Rohan Verma", "RA2111008010312", "Mech", new BigDecimal("499.00"), "UPI", "qr");
+        booking.setId(bookingId);
+        booking.setStatus("confirmed");
+        seat.setStatus("booked");
+
+        when(bookingRepository.findByIdWithPessimisticLock(bookingId)).thenReturn(Optional.of(booking));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(seatRepository.findByIdWithPessimisticLock(seatId)).thenReturn(Optional.of(seat));
+        when(bookingRepository.existsActiveBookingForSeat(seatId)).thenReturn(false);
+
+        bookingService.cancelBooking(bookingId, userId);
+
+        assertEquals("cancelled", booking.getStatus());
+        assertEquals("available", seat.getStatus());
+        assertNull(seat.getLockedBy());
+        verify(bookingRepository).save(booking);
+        verify(seatRepository).save(seat);
+    }
+
+    @Test
+    @DisplayName("Cancel booking rejected when attendee is not booking owner")
+    void cancelBooking_RejectsUnauthorizedUser() {
+        UUID bookingId = UUID.randomUUID();
+        Booking booking = new Booking("VIB26-EDM-999", event, seat, user, "Rohan Verma", "RA2111008010312", "Mech", new BigDecimal("499.00"), "UPI", "qr");
+        booking.setId(bookingId);
+        booking.setStatus("confirmed");
+
+        UUID unauthorizedUserId = UUID.randomUUID();
+        User attacker = new User("ATTACKER", "Attacker", "att@hack.fest", "hash", "student", "CSE", "1st Year", "att");
+        attacker.setId(unauthorizedUserId);
+
+        when(bookingRepository.findByIdWithPessimisticLock(bookingId)).thenReturn(Optional.of(booking));
+        when(userRepository.findById(unauthorizedUserId)).thenReturn(Optional.of(attacker));
+
+        assertThrows(BadRequestException.class, () -> bookingService.cancelBooking(bookingId, unauthorizedUserId));
+        verify(bookingRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Cancel booking rejected when pass is already checked in")
+    void cancelBooking_RejectsCheckedInPass() {
+        UUID bookingId = UUID.randomUUID();
+        Booking booking = new Booking("VIB26-EDM-999", event, seat, user, "Rohan Verma", "RA2111008010312", "Mech", new BigDecimal("499.00"), "UPI", "qr");
+        booking.setId(bookingId);
+        booking.setStatus("checked_in");
+
+        when(bookingRepository.findByIdWithPessimisticLock(bookingId)).thenReturn(Optional.of(booking));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        assertThrows(ConflictException.class, () -> bookingService.cancelBooking(bookingId, userId));
+        verify(bookingRepository, never()).save(any());
     }
 }
